@@ -23,7 +23,6 @@ import javax.security.auth.Subject;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
@@ -31,7 +30,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
@@ -47,10 +45,12 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
     private final long rootFileHandle;
     private final PathHandleRegistry pathHandleRegistry = new PathHandleRegistry();
     private final NfsIdMapping _idMapper = new SimpleIdMap();
+    private final FileSystemReaderWriter fileSystemReaderWriter;
 
     public AbstractFileSystem(Path root) {
         this.root = root;
         this.rootFileHandle = pathHandleRegistry.add(this.root);
+        this.fileSystemReaderWriter = new FileSystemReaderWriter(pathHandleRegistry);
     }
 
     abstract protected void applyOwnershipAndModeToPath(Path target, Subject subject, int mode);
@@ -232,10 +232,19 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
 
         Path currentPath = currentParentPath.resolve(oldName);
         Path newPath = destPath.resolve(newName);
+
+        if (destPath.equals(newPath)) {
+            return true;
+        }
+
+        if (Files.exists(newPath)) {
+            remove(dest, newName);
+        }
+
         try {
             Files.move(currentPath, newPath, StandardCopyOption.ATOMIC_MOVE);
         } catch (FileAlreadyExistsException e) {
-            throw new ExistException("path " + newPath);
+            throw new ExistException(String.valueOf(newPath));
         }
 
         pathHandleRegistry.replace(currentPath, newPath);
@@ -247,15 +256,6 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
         Path path = pathHandleRegistry.toPath(inode);
         Path parentPath = path.getParent();
         return toInode(pathHandleRegistry.toFileHandle(parentPath));
-    }
-
-    @Override
-    public int read(Inode inode, byte[] data, long offset, int count) throws IOException {
-        Path path = pathHandleRegistry.toPath(inode);
-        ByteBuffer destBuffer = ByteBuffer.wrap(data, 0, count);
-        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
-            return channel.read(destBuffer, offset);
-        }
     }
 
     @Override
@@ -306,19 +306,18 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
     }
 
     @Override
-    public WriteResult write(Inode inode, byte[] data, long offset, int count, StabilityLevel stabilityLevel) throws IOException {
-        Path path = pathHandleRegistry.toPath(inode);
+    public int read(Inode inode, byte[] data, long offset, int count) throws IOException {
+        return fileSystemReaderWriter.read(inode, data, offset, count);
+    }
 
-        ByteBuffer srcBuffer = ByteBuffer.wrap(data, 0, count);
-        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.WRITE)) {
-            int bytesWritten = channel.write(srcBuffer, offset);
-            return new WriteResult(StabilityLevel.FILE_SYNC, bytesWritten);
-        }
+    @Override
+    public WriteResult write(Inode inode, byte[] data, long offset, int count, StabilityLevel stabilityLevel) throws IOException {
+        return fileSystemReaderWriter.write(inode, data, offset, count, stabilityLevel);
     }
 
     @Override
     public void commit(Inode inode, long offset, int count) throws IOException {
-        throw new UnsupportedOperationException("Not supported yet.");
+        fileSystemReaderWriter.commit(inode, offset, count);
     }
 
     protected Stat getStat(Path p) throws IOException {
