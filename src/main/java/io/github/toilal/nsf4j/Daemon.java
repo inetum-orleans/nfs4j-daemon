@@ -12,6 +12,7 @@ import org.dcache.nfs.v4.MDSOperationFactory;
 import org.dcache.nfs.v4.NFSServerV41;
 import org.dcache.nfs.v4.xdr.nfs4_prot;
 import org.dcache.nfs.vfs.VirtualFileSystem;
+import org.dcache.oncrpc4j.rpc.IoStrategy;
 import org.dcache.oncrpc4j.rpc.OncRpcProgram;
 import org.dcache.oncrpc4j.rpc.OncRpcSvc;
 import org.dcache.oncrpc4j.rpc.OncRpcSvcBuilder;
@@ -58,7 +59,7 @@ public class Daemon implements Closeable {
         OncRpcSvcBuilder rpcBuilder = new OncRpcSvcBuilder()
                 .withPort(config.getPort())
                 .withAutoPublish()
-                .withWorkerThreadIoStrategy()
+                .withIoStrategy(IoStrategy.LEADER_FOLLOWER)
                 .withServiceName(name);
 
         if (config.isUdp()) {

@@ -1,6 +1,8 @@
 package io.github.toilal.nsf4j.fs;
 
+import org.dcache.nfs.status.BadNameException;
 import org.dcache.nfs.status.ExistException;
+import org.dcache.nfs.status.NoEntException;
 import org.dcache.nfs.status.NotEmptyException;
 import org.dcache.nfs.status.NotSuppException;
 import org.dcache.nfs.status.PermException;
@@ -27,6 +29,7 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -86,21 +89,19 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
     }
 
     protected void applyFileAttributesToStat(Stat stat, Path path, A attrs) throws IOException {
-        if (attrs != null) {
-            stat.setATime(attrs.lastAccessTime().toMillis());
-            stat.setCTime(attrs.creationTime().toMillis());
-            stat.setMTime(attrs.lastModifiedTime().toMillis());
+        stat.setATime(attrs.lastAccessTime().toMillis());
+        stat.setCTime(attrs.creationTime().toMillis());
+        stat.setMTime(attrs.lastModifiedTime().toMillis());
 
-            stat.setSize(attrs.size());
-            stat.setGeneration(attrs.lastModifiedTime().toMillis());
-        }
+        stat.setSize(attrs.size());
+        stat.setGeneration(attrs.lastModifiedTime().toMillis());
 
         long fileHandle = pathHandleRegistry.toFileHandle(path);
+        stat.setIno((int) fileHandle);
+        stat.setFileid((int) fileHandle);
 
         stat.setDev(17);
         stat.setRdev(17);
-        stat.setIno((int) fileHandle);
-        stat.setFileid((int) fileHandle);
     }
 
     private Inode toInode(long fileHandle) {
@@ -114,7 +115,7 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
     @Override
     public Inode create(Inode parent, Type type, String path, Subject subject, int mode) throws IOException {
         Path parentPath = pathHandleRegistry.toPath(parent);
-        Path newPath = parentPath.resolve(path);
+        Path newPath = parentPath.resolve(path).normalize();
         try {
             Files.createFile(newPath);
         } catch (FileAlreadyExistsException e) {
@@ -141,8 +142,13 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
     @Override
     public Inode lookup(Inode parent, String path) throws IOException {
         Path parentPath = pathHandleRegistry.toPath(parent);
-        Path child = parentPath.resolve(path);
-        return toInode(pathHandleRegistry.toFileHandle(child));
+
+        try {
+            Path child = parentPath.resolve(path).normalize();
+            return toInode(pathHandleRegistry.toFileHandle(child));
+        } catch (InvalidPathException e) {
+            throw new BadNameException(path);
+        }
     }
 
     @Override
@@ -150,7 +156,7 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
         Path parentPath = pathHandleRegistry.toPath(parent);
         Path existingPath = pathHandleRegistry.toPath(existing);
 
-        Path targetPath = parentPath.resolve(target);
+        Path targetPath = parentPath.resolve(target).normalize();
 
         try {
             Files.createLink(targetPath, existingPath);
@@ -213,7 +219,7 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
     @Override
     public Inode mkdir(Inode parent, String path, Subject subject, int mode) throws IOException {
         Path parentPath = pathHandleRegistry.toPath(parent);
-        Path newPath = parentPath.resolve(path);
+        Path newPath = parentPath.resolve(path).normalize();
 
         try {
             Files.createDirectory(newPath);
@@ -230,15 +236,11 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
         Path currentParentPath = pathHandleRegistry.toPath(src);
         Path destPath = pathHandleRegistry.toPath(dest);
 
-        Path currentPath = currentParentPath.resolve(oldName);
-        Path newPath = destPath.resolve(newName);
+        Path currentPath = currentParentPath.resolve(oldName).normalize();
+        Path newPath = destPath.resolve(newName).normalize();
 
         if (destPath.equals(newPath)) {
             return true;
-        }
-
-        if (Files.exists(newPath)) {
-            remove(dest, newName);
         }
 
         try {
@@ -254,7 +256,7 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
     @Override
     public Inode parentOf(Inode inode) throws IOException {
         Path path = pathHandleRegistry.toPath(inode);
-        Path parentPath = path.getParent();
+        Path parentPath = path.getParent().normalize();
         return toInode(pathHandleRegistry.toFileHandle(parentPath));
     }
 
@@ -267,7 +269,7 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
     @Override
     public void remove(Inode parent, String path) throws IOException {
         Path parentPath = pathHandleRegistry.toPath(parent);
-        Path targetPath = parentPath.resolve(path);
+        Path targetPath = parentPath.resolve(path).normalize();
 
         try {
             Files.delete(targetPath);
@@ -282,8 +284,8 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
     public Inode symlink(Inode parent, String linkName, String targetName, Subject subject, int mode) throws IOException {
         Path parentPath = pathHandleRegistry.toPath(parent);
 
-        Path link = parentPath.resolve(linkName);
-        Path target = parentPath.resolve(targetName);
+        Path link = parentPath.resolve(linkName).normalize();
+        Path target = parentPath.resolve(targetName).normalize();
 
         if (!targetName.startsWith("/")) {
             target = parentPath.relativize(target);
@@ -321,15 +323,14 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
     }
 
     protected Stat getStat(Path p) throws IOException {
-        A attrs = null;
         try {
-            attrs = getFileAttributes(p);
+            A attrs = getFileAttributes(p);
+            Stat stat = new Stat();
+            applyFileAttributesToStat(stat, p, attrs);
+            return stat;
         } catch (NoSuchFileException e) {
+            throw new NoEntException(p.toString());
         }
-
-        Stat stat = new Stat();
-        applyFileAttributesToStat(stat, p, attrs);
-        return stat;
     }
 
     @Override

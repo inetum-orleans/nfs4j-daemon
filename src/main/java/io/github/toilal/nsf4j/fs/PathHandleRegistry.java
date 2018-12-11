@@ -10,11 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 public class PathHandleRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(PathHandleRegistry.class);
@@ -111,11 +111,15 @@ public class PathHandleRegistry {
         this.replaceItem(oldPath, newPath);
 
         if (Files.isDirectory(newPath, LinkOption.NOFOLLOW_LINKS)) {
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(newPath)) {
-                stream.forEach((item) -> {
-                    Path oldItem = oldPath.resolve(newPath.relativize(item));
-                    this.replaceItem(oldItem, item);
+            Stream<Path> directoryWalker = Files.walk(newPath);
+            try {
+                directoryWalker.forEach((item) -> {
+                    Path oldItem = oldPath.resolve(newPath.relativize(item)).normalize();
+                    Path newItem = item.normalize();
+                    this.replaceItem(oldItem, newItem);
                 });
+            } finally {
+                directoryWalker.close();
             }
         }
     }
