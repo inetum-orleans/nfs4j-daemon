@@ -14,6 +14,7 @@
     </properties>
 
     <build>
+        <finalName>nfs4j</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -43,6 +44,46 @@
                                     <mainClass>io.github.toilal.nsf4j.Main</mainClass>
                                 </manifest>
                             </archive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                <artifactId>launch4j-maven-plugin</artifactId>
+                <version>1.7.24</version>
+                <executions>
+                    <execution>
+                        <id>l4j-windows</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>launch4j</goal>
+                        </goals>
+                        <configuration>
+                            <dontWrapJar>false</dontWrapJar>
+                            <headerType>console</headerType>
+                            <jar>target/${project.build.finalName}-jar-with-dependencies.jar</jar>
+                            <outfile>dist/win64/${project.build.finalName}.exe</outfile>
+                            <chdir>.</chdir>
+                            <priority>normal</priority>
+                            <downloadUrl>http://java.com/download</downloadUrl>
+                            <stayAlive>false</stayAlive>
+                            <restartOnCrash>false</restartOnCrash>
+                            <classPath>
+                              <mainClass>io.github.toilal.nsf4j.Main</mainClass>
+                              <addDependencies>true</addDependencies>
+                            </classPath>
+                            <jre>
+                                <path>${env.JAVA_HOME}</path>
+                                <bundledJre64Bit>true</bundledJre64Bit>
+                                <bundledJreAsFallback>false</bundledJreAsFallback>
+                                <minVersion>8</minVersion>
+                                <maxVersion></maxVersion>
+                                <jdkPreference>jdkOnly</jdkPreference>
+                                <runtimeBits>64</runtimeBits>
+                                <initialHeapSize>64</initialHeapSize>
+                                <maxHeapSize>256</maxHeapSize>
+                            </jre>
                         </configuration>
                     </execution>
                 </executions>
