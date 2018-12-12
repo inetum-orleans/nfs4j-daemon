@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.security.auth.Subject;
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -263,7 +264,11 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
     @Override
     public String readlink(Inode inode) throws IOException {
         Path path = pathHandleRegistry.toPath(inode);
-        return Files.readSymbolicLink(path).toString();
+        String linkData = Files.readSymbolicLink(path).normalize().toString();
+        if (File.separatorChar != '/') {
+            linkData = linkData.replace(File.separatorChar, '/');
+        }
+        return linkData;
     }
 
     @Override
