@@ -41,7 +41,7 @@ public class Main implements Callable<Void> {
         Config config = null;
 
         File configFile = this.config.toFile();
-        if (configFile != null || configFile.exists()) {
+        if (configFile != null && configFile.exists()) {
             try (FileInputStream fis = new FileInputStream(this.config.toFile())) {
                 config = yaml.loadAs(fis, Config.class);
             }
