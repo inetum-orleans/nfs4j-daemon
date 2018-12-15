@@ -2,12 +2,21 @@ package io.github.toilal.nsf4j.config;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 
+/**
+ * Configuration class of nfs4j daemon.
+ */
 public class Config {
     private int port = 2049;
     private boolean udp = false;
-    private Path root = Paths.get(".");
+    private List<Share> shares = Arrays.asList(new Share(Paths.get("."), "/"));
     private Path exportFile;
+
+    public Config() {
+        this.shares = shares;
+    }
 
     public int getPort() {
         return port;
@@ -25,19 +34,19 @@ public class Config {
         this.udp = udp;
     }
 
-    public Path getRoot() {
-        return root;
-    }
-
-    public void setRoot(Path root) {
-        this.root = root;
-    }
-
     public Path getExportFile() {
         return exportFile;
     }
 
     public void setExportFile(Path exportFile) {
         this.exportFile = exportFile;
+    }
+
+    public List<Share> getShares() {
+        return shares;
+    }
+
+    public void setShares(List<Share> shares) {
+        this.shares = shares;
     }
 }

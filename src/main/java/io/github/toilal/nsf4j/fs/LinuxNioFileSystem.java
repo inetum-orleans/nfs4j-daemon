@@ -1,5 +1,6 @@
 package io.github.toilal.nsf4j.fs;
 
+import io.github.toilal.nsf4j.fs.handle.UniqueHandleGenerator;
 import org.dcache.auth.GidPrincipal;
 import org.dcache.auth.UidPrincipal;
 import org.dcache.nfs.vfs.Stat;
@@ -20,14 +21,16 @@ import java.security.Principal;
 
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
-public class PosixFileSystem extends AbstractFileSystem<PosixFileAttributes> {
-    private static final Logger LOG = LoggerFactory.getLogger(PosixFileSystem.class);
+/**
+ * A Linux implementation of {@link org.dcache.nfs.vfs.VirtualFileSystem}.
+ */
+public class LinuxNioFileSystem extends AbstractNioFileSystem<PosixFileAttributes> {
+    private static final Logger LOG = LoggerFactory.getLogger(LinuxNioFileSystem.class);
 
     private final UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
 
-
-    public PosixFileSystem(Path root) {
-        super(root);
+    public LinuxNioFileSystem(Path root, UniqueHandleGenerator handleGenerator) {
+        super(root, handleGenerator);
     }
 
     @Override

@@ -1,8 +1,12 @@
 package io.github.toilal.nsf4j;
 
 import io.github.toilal.nsf4j.config.Config;
-import io.github.toilal.nsf4j.fs.PosixFileSystem;
-import io.github.toilal.nsf4j.fs.WindowsFileSystem;
+import io.github.toilal.nsf4j.config.Share;
+import io.github.toilal.nsf4j.fs.AttachableFileSystem;
+import io.github.toilal.nsf4j.fs.DefaultFileSystemFactory;
+import io.github.toilal.nsf4j.fs.FileSystemFactory;
+import io.github.toilal.nsf4j.fs.RootFileSystem;
+import io.github.toilal.nsf4j.fs.handle.UniqueAtomicLongGenerator;
 import org.dcache.nfs.ExportFile;
 import org.dcache.nfs.v3.MountServer;
 import org.dcache.nfs.v3.NfsServerV3;
@@ -11,7 +15,6 @@ import org.dcache.nfs.v3.xdr.nfs3_prot;
 import org.dcache.nfs.v4.MDSOperationFactory;
 import org.dcache.nfs.v4.NFSServerV41;
 import org.dcache.nfs.v4.xdr.nfs4_prot;
-import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.dcache.oncrpc4j.rpc.IoStrategy;
 import org.dcache.oncrpc4j.rpc.OncRpcProgram;
 import org.dcache.oncrpc4j.rpc.OncRpcSvc;
@@ -26,6 +29,9 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * nfs4j Daemon.
+ */
 public class Daemon implements Closeable {
     private final OncRpcSvc nfsSvc;
 
@@ -47,20 +53,11 @@ public class Daemon implements Closeable {
             }
         }
 
-        String name = "nfs4j@" + config.getPort();
-
-        VirtualFileSystem vfs;
-        if (System.getProperty("os.name").toLowerCase().startsWith("win")) {
-            vfs = new WindowsFileSystem(config.getRoot());
-        } else {
-            vfs = new PosixFileSystem(config.getRoot());
-        }
-
         OncRpcSvcBuilder rpcBuilder = new OncRpcSvcBuilder()
                 .withPort(config.getPort())
                 .withAutoPublish()
                 .withIoStrategy(IoStrategy.LEADER_FOLLOWER)
-                .withServiceName(name);
+                .withServiceName("nfs4j@" + config.getPort());
 
         if (config.isUdp()) {
             rpcBuilder.withUDP();
@@ -69,6 +66,16 @@ public class Daemon implements Closeable {
         }
 
         nfsSvc = rpcBuilder.build();
+
+        UniqueAtomicLongGenerator uniqueHandleGenerator = new UniqueAtomicLongGenerator();
+
+        FileSystemFactory fsFactory = new DefaultFileSystemFactory();
+
+        RootFileSystem vfs = new RootFileSystem(uniqueHandleGenerator);
+        for (Share share : config.getShares()) {
+            AttachableFileSystem shareVfs = fsFactory.newFileSystem(share.getPath(), uniqueHandleGenerator);
+            vfs.attachFileSystem(shareVfs, share.getAlias());
+        }
 
         NFSServerV41 nfs4 = new NFSServerV41.Builder()
                 .withVfs(vfs)

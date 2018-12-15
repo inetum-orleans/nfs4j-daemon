@@ -1,5 +1,6 @@
 package io.github.toilal.nsf4j.fs;
 
+import io.github.toilal.nsf4j.fs.handle.UniqueHandleGenerator;
 import org.dcache.nfs.vfs.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,11 +14,14 @@ import java.nio.file.attribute.DosFileAttributes;
 
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
-public class WindowsFileSystem extends AbstractFileSystem<DosFileAttributes> {
-    private static final Logger LOG = LoggerFactory.getLogger(WindowsFileSystem.class);
+/**
+ * A windows implementation of {@link org.dcache.nfs.vfs.VirtualFileSystem}.
+ */
+public class WindowsNioFileSystem extends AbstractNioFileSystem<DosFileAttributes> {
+    private static final Logger LOG = LoggerFactory.getLogger(WindowsNioFileSystem.class);
 
-    public WindowsFileSystem(Path root) {
-        super(root);
+    public WindowsNioFileSystem(Path root, UniqueHandleGenerator handleGenerator) {
+        super(root, handleGenerator);
     }
 
     @Override
@@ -34,11 +38,6 @@ public class WindowsFileSystem extends AbstractFileSystem<DosFileAttributes> {
         int type = attrs.isSymbolicLink() ? Stat.S_IFLNK : attrs.isDirectory() ? Stat.S_IFDIR : Stat.S_IFREG;
         stat.setMode(type | (attrs.isReadOnly() ? 0555 : 0777));
         stat.setNlink(1);
-    }
-
-    @Override
-    protected void applyStatToPath(Stat stat, Path path) throws IOException {
-        super.applyStatToPath(stat, path);
     }
 
     @Override

@@ -1,4 +1,4 @@
-package io.github.toilal.nsf4j.fs;
+package io.github.toilal.nsf4j.fs.handle;
 
 import com.google.common.primitives.Longs;
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
@@ -10,35 +10,51 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
-public class PathHandleRegistry {
-    private static final Logger LOG = LoggerFactory.getLogger(PathHandleRegistry.class);
+/**
+ * Bidirectionnal mapping of Path to/from File Handle.
+ *
+ * @param <P>
+ */
+public abstract class HandleRegistry<P> {
+    private static final Logger LOG = LoggerFactory.getLogger(HandleRegistry.class);
 
-    private final NonBlockingHashMapLong<Path> fileHandleToPath = new NonBlockingHashMapLong<>();
-    private final NonBlockingHashMap<Path, Long> pathToFileHandle = new NonBlockingHashMap<>();
-    private final AtomicLong id = new AtomicLong(1); //numbering starts at 1
+    private final NonBlockingHashMapLong<P> fileHandleToPath = new NonBlockingHashMapLong<>();
+    private final NonBlockingHashMap<P, Long> pathToFileHandle = new NonBlockingHashMap<>();
+    private final UniqueHandleGenerator uniqueLongGenerator;
 
-    public Path toPath(Inode inode) throws StaleException {
+    public HandleRegistry(UniqueHandleGenerator uniqueLongGenerator) {
+        this.uniqueLongGenerator = uniqueLongGenerator;
+    }
+
+    abstract protected boolean pathExists(P path);
+
+    abstract public void replace(P oldPath, P newPath) throws IOException;
+
+    public P toPath(Inode inode) throws StaleException {
         return toPath(toFileHandle(inode));
     }
 
-    public Path toPath(long fileHandle) throws StaleException {
-        Path path = fileHandleToPath.get(fileHandle);
+    public boolean hasInode(Inode inode) {
+        return hasInode(toFileHandle(inode));
+    }
+
+    public boolean hasInode(long fileHandle) {
+        return fileHandleToPath.containsKey(fileHandle);
+    }
+
+    public P toPath(long fileHandle) throws StaleException {
+        P path = fileHandleToPath.get(fileHandle);
         if (path == null) {
             throw new StaleException(String.valueOf(fileHandle));
         }
         return path;
     }
 
-    private long toFileHandle(Path path, boolean createIfFileExists) throws NoEntException {
+    private long toFileHandle(P path, boolean createIfPathExists) throws NoEntException {
         Long fileHandle = pathToFileHandle.get(path);
-        boolean exists = Files.exists(path, LinkOption.NOFOLLOW_LINKS);
-        if (exists && createIfFileExists && fileHandle == null) {
+        boolean exists = pathExists(path);
+        if (exists && createIfPathExists && fileHandle == null) {
             fileHandle = this.add(path);
         } else if (!exists && fileHandle != null) {
             this.remove(path);
@@ -49,7 +65,7 @@ public class PathHandleRegistry {
         return fileHandle;
     }
 
-    public long toFileHandle(Path path) throws NoEntException {
+    public long toFileHandle(P path) throws NoEntException {
         return toFileHandle(path, true);
     }
 
@@ -57,29 +73,29 @@ public class PathHandleRegistry {
         return Longs.fromByteArray(inode.getFileId());
     }
 
-    public Inode toInode(Path path) throws NoEntException {
+    public Inode toInode(P path) throws NoEntException {
         return this.toInode(path, true);
     }
 
-    private Inode toInode(Path path, boolean createIfFileExists) throws NoEntException {
-        return this.toInode(toFileHandle(path, createIfFileExists));
+    private Inode toInode(P path, boolean createIfPathExists) throws NoEntException {
+        return this.toInode(toFileHandle(path, createIfPathExists));
     }
 
     public Inode toInode(long fileHandle) {
         return Inode.forFile(Longs.toByteArray(fileHandle));
     }
 
-    public long add(Path path) {
-        return this.add(path, this.id.getAndIncrement());
+    public long add(P path) {
+        return this.add(path, this.uniqueLongGenerator.uniqueHandle());
     }
 
-    private long add(Path path, long fileHandle) {
+    private long add(P path, long fileHandle) {
         Long otherFh = pathToFileHandle.putIfAbsent(path, fileHandle);
         if (otherFh != null) {
             throw new IllegalStateException("Can't add FileHandle " + fileHandle + " with Path " + path + ". Path " + path + " is already registered with Inode " + otherFh);
         }
 
-        Path existingPath = fileHandleToPath.putIfAbsent(fileHandle, path);
+        P existingPath = fileHandleToPath.putIfAbsent(fileHandle, path);
         if (existingPath != null) {
             pathToFileHandle.remove(fileHandle);
             throw new IllegalStateException("Can't add FileHandle " + fileHandle + " with Path " + path + ". FileHandle " + fileHandle + " is already registered with Path " + existingPath);
@@ -88,7 +104,7 @@ public class PathHandleRegistry {
         return fileHandle;
     }
 
-    private boolean replaceItem(Path oldPath, Path newPath) {
+    protected boolean replaceItem(P oldPath, P newPath) {
         Long fileHandle = pathToFileHandle.remove(oldPath);
         if (fileHandle == null) {
             return false;
@@ -99,7 +115,7 @@ public class PathHandleRegistry {
             // It seems harmless ...
         }
 
-        Path removedPath = fileHandleToPath.replace(fileHandle, newPath);
+        P removedPath = fileHandleToPath.replace(fileHandle, newPath);
         if (removedPath != null && !removedPath.equals(oldPath)) {
             return false;
         }
@@ -107,30 +123,13 @@ public class PathHandleRegistry {
         return true;
     }
 
-    public void replace(Path oldPath, Path newPath) throws IOException {
-        this.replaceItem(oldPath, newPath);
-
-        if (Files.isDirectory(newPath, LinkOption.NOFOLLOW_LINKS)) {
-            Stream<Path> directoryWalker = Files.walk(newPath);
-            try {
-                directoryWalker.forEach((item) -> {
-                    Path oldItem = oldPath.resolve(newPath.relativize(item)).normalize();
-                    Path newItem = item.normalize();
-                    this.replaceItem(oldItem, newItem);
-                });
-            } finally {
-                directoryWalker.close();
-            }
-        }
-    }
-
-    public long remove(Path path) {
+    public long remove(P path) {
         Long fileHandle = pathToFileHandle.remove(path);
         if (fileHandle == null) {
             throw new IllegalStateException("Can't remove Path " + path + ". Path " + path + " is not registered.");
         }
 
-        Path removedPath = fileHandleToPath.remove(fileHandle);
+        P removedPath = fileHandleToPath.remove(fileHandle);
         if (!path.equals(removedPath)) {
             pathToFileHandle.put(path, fileHandle);
             throw new IllegalStateException("Can't remove Path " + path + ". Removed Path " + removedPath + " doesn't match expected path " + path + ".");

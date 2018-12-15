@@ -1,5 +1,9 @@
 package io.github.toilal.nsf4j.fs;
 
+import io.github.toilal.nsf4j.fs.handle.HandleRegistry;
+import io.github.toilal.nsf4j.fs.handle.PathHandleRegistry;
+import io.github.toilal.nsf4j.fs.handle.UniqueHandleGenerator;
+import io.github.toilal.nsf4j.fs.io.FileSystemReaderWriter;
 import org.dcache.nfs.status.BadNameException;
 import org.dcache.nfs.status.ExistException;
 import org.dcache.nfs.status.NoEntException;
@@ -17,7 +21,6 @@ import org.dcache.nfs.vfs.FsStat;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.nfs.vfs.Stat;
 import org.dcache.nfs.vfs.Stat.Type;
-import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,24 +45,36 @@ import java.util.List;
 
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
-public abstract class AbstractFileSystem<A extends BasicFileAttributes> implements VirtualFileSystem {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractFileSystem.class);
+/**
+ * Abstract implementation of {@link AttachableFileSystem}.
+ *
+ * @param <A>
+ */
+public abstract class AbstractNioFileSystem<A extends BasicFileAttributes> implements AttachableFileSystem {
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractNioFileSystem.class);
 
-    private final Path root;
-    private final long rootFileHandle;
-    private final PathHandleRegistry pathHandleRegistry = new PathHandleRegistry();
     private final NfsIdMapping _idMapper = new SimpleIdMap();
     private final FileSystemReaderWriter fileSystemReaderWriter;
 
-    public AbstractFileSystem(Path root) {
+    protected final long rootFileHandle;
+    protected final Path root;
+    protected final HandleRegistry<Path> handleRegistry;
+
+    public AbstractNioFileSystem(Path root, UniqueHandleGenerator handleGenerator) {
         this.root = root;
-        this.rootFileHandle = pathHandleRegistry.add(this.root);
-        this.fileSystemReaderWriter = new FileSystemReaderWriter(pathHandleRegistry);
+        this.handleRegistry = new PathHandleRegistry(handleGenerator);
+        this.rootFileHandle = handleRegistry.add(this.root);
+        this.fileSystemReaderWriter = new FileSystemReaderWriter(handleRegistry);
     }
 
     abstract protected void applyOwnershipAndModeToPath(Path target, Subject subject, int mode);
 
     abstract protected A getFileAttributes(Path path) throws IOException;
+
+    @Override
+    public boolean hasInode(Inode inode) {
+        return this.handleRegistry.hasInode(inode);
+    }
 
     protected void applyStatToPath(Stat stat, Path path) throws IOException {
         if (stat.isDefined(Stat.StatAttribute.SIZE)) {
@@ -97,7 +112,7 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
         stat.setSize(attrs.size());
         stat.setGeneration(attrs.lastModifiedTime().toMillis());
 
-        long fileHandle = pathHandleRegistry.toFileHandle(path);
+        long fileHandle = handleRegistry.toFileHandle(path);
         stat.setIno((int) fileHandle);
         stat.setFileid((int) fileHandle);
 
@@ -106,16 +121,16 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
     }
 
     private Inode toInode(long fileHandle) {
-        return pathHandleRegistry.toInode(fileHandle);
+        return handleRegistry.toInode(fileHandle);
     }
 
     private long toFileHandle(Inode inode) {
-        return pathHandleRegistry.toFileHandle(inode);
+        return handleRegistry.toFileHandle(inode);
     }
 
     @Override
     public Inode create(Inode parent, Type type, String path, Subject subject, int mode) throws IOException {
-        Path parentPath = pathHandleRegistry.toPath(parent);
+        Path parentPath = handleRegistry.toPath(parent);
         Path newPath = parentPath.resolve(path).normalize();
         try {
             Files.createFile(newPath);
@@ -124,7 +139,7 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
         }
 
         applyOwnershipAndModeToPath(newPath, subject, mode);
-        return toInode(pathHandleRegistry.toFileHandle(newPath));
+        return toInode(handleRegistry.toFileHandle(newPath));
     }
 
     @Override
@@ -132,21 +147,21 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
         FileStore store = Files.getFileStore(root);
         long total = store.getTotalSpace();
         long free = store.getUsableSpace();
-        return new FsStat(total, Long.MAX_VALUE, total - free, pathHandleRegistry.size());
+        return new FsStat(total, Long.MAX_VALUE, total - free, handleRegistry.size());
     }
 
     @Override
-    public Inode getRootInode() {
+    public Inode getRootInode() throws IOException {
         return toInode(rootFileHandle);
     }
 
     @Override
     public Inode lookup(Inode parent, String path) throws IOException {
-        Path parentPath = pathHandleRegistry.toPath(parent);
+        Path parentPath = handleRegistry.toPath(parent);
 
         try {
             Path child = parentPath.resolve(path).normalize();
-            return toInode(pathHandleRegistry.toFileHandle(child));
+            return toInode(handleRegistry.toFileHandle(child));
         } catch (InvalidPathException e) {
             throw new BadNameException(path);
         }
@@ -154,8 +169,8 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
 
     @Override
     public Inode link(Inode parent, Inode existing, String target, Subject subject) throws IOException {
-        Path parentPath = pathHandleRegistry.toPath(parent);
-        Path existingPath = pathHandleRegistry.toPath(existing);
+        Path parentPath = handleRegistry.toPath(parent);
+        Path existingPath = handleRegistry.toPath(existing);
 
         Path targetPath = parentPath.resolve(target).normalize();
 
@@ -171,10 +186,10 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
             throw new ServerFaultException("Failed to create: " + e.getMessage(), e);
         }
 
-        return toInode(pathHandleRegistry.toFileHandle(targetPath));
+        return toInode(handleRegistry.toFileHandle(targetPath));
     }
 
-    private byte[] toVerifier(long x) {
+    protected byte[] toVerifier(long x) {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putLong(x);
         byte[] verifier = new byte[8];
@@ -184,18 +199,15 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
 
     @Override
     public DirectoryStream list(Inode inode, byte[] verifier, long cookie) throws IOException {
-        Path path = pathHandleRegistry.toPath(inode);
+        Path path = handleRegistry.toPath(inode);
         final List<DirectoryEntry> list = new ArrayList<>();
         long verifierLong = Long.MIN_VALUE;
         try (java.nio.file.DirectoryStream<Path> ds = Files.newDirectoryStream(path)) {
-            // OperationREADDIR for NFSV4 automatically handles offsets for reserved cookie values,
-            // so we can start with 0.
             long currentCookie = 0;
             for (Path p : ds) {
-                String filename = p.getFileName().toString();
-                verifierLong += filename.hashCode() + currentCookie * 1024;
+                verifierLong += p.hashCode() + currentCookie * 1024;
                 if (currentCookie >= cookie) {
-                    list.add(new DirectoryEntry(filename, pathHandleRegistry.toInode(p), getStat(p), currentCookie));
+                    list.add(this.buildDirectoryEntry(p, currentCookie));
                 }
                 currentCookie++;
             }
@@ -203,9 +215,19 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
         return new DirectoryStream(toVerifier(verifierLong), list);
     }
 
+    protected DirectoryEntry buildDirectoryEntry(Path p, long currentCookie) throws IOException {
+        return new DirectoryEntry(p.getFileName().toString(), handleRegistry.toInode(p), this.getStat(p), currentCookie);
+    }
+
+    @Override
+    public DirectoryEntry buildRootDirectoryEntry(String filename, long currentCookie) throws IOException {
+        Path rootPath = handleRegistry.toPath(this.rootFileHandle);
+        return new DirectoryEntry(filename, this.toInode(this.rootFileHandle), this.getStat(rootPath), currentCookie);
+    }
+
     @Override
     public byte[] directoryVerifier(Inode inode) throws IOException {
-        Path path = pathHandleRegistry.toPath(inode);
+        Path path = handleRegistry.toPath(inode);
         long verifierLong = Long.MIN_VALUE;
         try (java.nio.file.DirectoryStream<Path> ds = Files.newDirectoryStream(path)) {
             long currentCookie = 0;
@@ -219,7 +241,7 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
 
     @Override
     public Inode mkdir(Inode parent, String path, Subject subject, int mode) throws IOException {
-        Path parentPath = pathHandleRegistry.toPath(parent);
+        Path parentPath = handleRegistry.toPath(parent);
         Path newPath = parentPath.resolve(path).normalize();
 
         try {
@@ -229,13 +251,13 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
         }
 
         applyOwnershipAndModeToPath(newPath, subject, mode);
-        return toInode(pathHandleRegistry.toFileHandle(newPath));
+        return toInode(handleRegistry.toFileHandle(newPath));
     }
 
     @Override
     public boolean move(Inode src, String oldName, Inode dest, String newName) throws IOException {
-        Path currentParentPath = pathHandleRegistry.toPath(src);
-        Path destPath = pathHandleRegistry.toPath(dest);
+        Path currentParentPath = handleRegistry.toPath(src);
+        Path destPath = handleRegistry.toPath(dest);
 
         Path currentPath = currentParentPath.resolve(oldName).normalize();
         Path newPath = destPath.resolve(newName).normalize();
@@ -250,20 +272,20 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
             throw new ExistException(String.valueOf(newPath));
         }
 
-        pathHandleRegistry.replace(currentPath, newPath);
+        handleRegistry.replace(currentPath, newPath);
         return true;
     }
 
     @Override
     public Inode parentOf(Inode inode) throws IOException {
-        Path path = pathHandleRegistry.toPath(inode);
+        Path path = handleRegistry.toPath(inode);
         Path parentPath = path.getParent().normalize();
-        return toInode(pathHandleRegistry.toFileHandle(parentPath));
+        return toInode(handleRegistry.toFileHandle(parentPath));
     }
 
     @Override
     public String readlink(Inode inode) throws IOException {
-        Path path = pathHandleRegistry.toPath(inode);
+        Path path = handleRegistry.toPath(inode);
         String linkData = Files.readSymbolicLink(path).normalize().toString();
         if (File.separatorChar != '/') {
             linkData = linkData.replace(File.separatorChar, '/');
@@ -273,7 +295,7 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
 
     @Override
     public void remove(Inode parent, String path) throws IOException {
-        Path parentPath = pathHandleRegistry.toPath(parent);
+        Path parentPath = handleRegistry.toPath(parent);
         Path targetPath = parentPath.resolve(path).normalize();
 
         try {
@@ -282,12 +304,12 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
             throw new NotEmptyException("Directory " + targetPath + " is not empty", e);
         }
 
-        pathHandleRegistry.remove(targetPath);
+        handleRegistry.remove(targetPath);
     }
 
     @Override
     public Inode symlink(Inode parent, String linkName, String targetName, Subject subject, int mode) throws IOException {
-        Path parentPath = pathHandleRegistry.toPath(parent);
+        Path parentPath = handleRegistry.toPath(parent);
 
         Path link = parentPath.resolve(linkName).normalize();
         Path target = parentPath.resolve(targetName).normalize();
@@ -309,7 +331,7 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
         }
 
         applyOwnershipAndModeToPath(link, subject, mode);
-        return toInode(pathHandleRegistry.toFileHandle(link));
+        return toInode(handleRegistry.toFileHandle(link));
     }
 
     @Override
@@ -345,13 +367,13 @@ public abstract class AbstractFileSystem<A extends BasicFileAttributes> implemen
 
     @Override
     public Stat getattr(Inode inode) throws IOException {
-        Path path = pathHandleRegistry.toPath(inode);
+        Path path = handleRegistry.toPath(inode);
         return getStat(path);
     }
 
     @Override
     public void setattr(Inode inode, Stat stat) throws IOException {
-        Path path = pathHandleRegistry.toPath(inode);
+        Path path = handleRegistry.toPath(inode);
         applyStatToPath(stat, path);
     }
 

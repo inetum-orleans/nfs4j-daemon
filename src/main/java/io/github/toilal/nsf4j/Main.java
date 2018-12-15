@@ -3,6 +3,7 @@ package io.github.toilal.nsf4j;
 import io.github.toilal.nsf4j.config.Config;
 import io.github.toilal.nsf4j.config.CustomConstructor;
 import io.github.toilal.nsf4j.config.CustomRepresenter;
+import io.github.toilal.nsf4j.config.Share;
 import org.yaml.snakeyaml.Yaml;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
@@ -10,15 +11,19 @@ import picocli.CommandLine.Option;
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 
+/**
+ * Main entrypoint for nfs4j daemon.
+ */
 public class Main implements Callable<Void> {
     @Option(names = {"-c", "--config"}, description = "Path to configuration file", defaultValue = "nfs4j.yml")
     private Path config;
 
-    @Option(names = {"-r", "--root"}, description = "Root directory to serve")
-    private Path root;
+    @Option(names = {"-s", "--share"}, description = "Root directory to serve")
+    private Path share;
 
     @Option(names = {"-p", "--port"}, description = "RPC port to use")
     private Integer port;
@@ -59,8 +64,8 @@ public class Main implements Callable<Void> {
             config.setUdp(this.udp);
         }
 
-        if (this.root != null) {
-            config.setRoot(this.root);
+        if (this.share != null) {
+            config.setShares(Arrays.asList(new Share(this.share, "/")));
         }
 
         if (this.exports != null) {

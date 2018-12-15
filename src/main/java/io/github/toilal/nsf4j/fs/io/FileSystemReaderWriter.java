@@ -1,5 +1,6 @@
-package io.github.toilal.nsf4j.fs;
+package io.github.toilal.nsf4j.fs.io;
 
+import io.github.toilal.nsf4j.fs.handle.HandleRegistry;
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.nfs.vfs.VirtualFileSystem;
@@ -11,11 +12,14 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+/**
+ * Read and write files.
+ */
 public class FileSystemReaderWriter {
     private final NonBlockingHashMap<Path, FileChannel> pathToFileChannel = new NonBlockingHashMap<>();
-    private final PathHandleRegistry pathHandleRegistry;
+    private final HandleRegistry<Path> pathHandleRegistry;
 
-    public FileSystemReaderWriter(PathHandleRegistry pathHandleRegistry) {
+    public FileSystemReaderWriter(HandleRegistry<Path> pathHandleRegistry) {
         this.pathHandleRegistry = pathHandleRegistry;
     }
 
@@ -28,7 +32,7 @@ public class FileSystemReaderWriter {
         }
     }
 
-    VirtualFileSystem.WriteResult write(Inode inode, byte[] data, long offset, int count, VirtualFileSystem.StabilityLevel stabilityLevel) throws IOException {
+    public VirtualFileSystem.WriteResult write(Inode inode, byte[] data, long offset, int count, VirtualFileSystem.StabilityLevel stabilityLevel) throws IOException {
         Path path = pathHandleRegistry.toPath(inode);
 
         ByteBuffer srcBuffer = ByteBuffer.wrap(data, 0, count);
@@ -58,7 +62,7 @@ public class FileSystemReaderWriter {
         }
     }
 
-    void commit(Inode inode, long offset, int count) throws IOException {
+    public void commit(Inode inode, long offset, int count) throws IOException {
         Path path = pathHandleRegistry.toPath(inode);
 
         FileChannel fileChannel = pathToFileChannel.remove(path);
