@@ -1,6 +1,7 @@
 package io.github.toilal.nsf4j.fs;
 
 import io.github.toilal.nsf4j.fs.handle.UniqueHandleGenerator;
+import io.github.toilal.nsf4j.fs.permission.PermissionsMapper;
 
 import java.nio.file.Path;
 
@@ -9,11 +10,11 @@ import java.nio.file.Path;
  */
 public class DefaultFileSystemFactory implements FileSystemFactory {
     @Override
-    public AttachableFileSystem newFileSystem(Path root, UniqueHandleGenerator uniqueLongGenerator) {
+    public AttachableFileSystem newFileSystem(Path root, PermissionsMapper permissionsMapper, UniqueHandleGenerator uniqueLongGenerator) {
         if (System.getProperty("os.name").toLowerCase().startsWith("win")) {
-            return new WindowsNioFileSystem(root, uniqueLongGenerator);
+            return new WindowsNioFileSystem(root, permissionsMapper, uniqueLongGenerator);
         } else {
-            return new LinuxNioFileSystem(root, uniqueLongGenerator);
+            return new LinuxNioFileSystem(root, permissionsMapper, uniqueLongGenerator);
         }
     }
 }

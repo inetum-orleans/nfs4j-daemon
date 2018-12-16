@@ -1,6 +1,7 @@
 package io.github.toilal.nsf4j.fs;
 
 import io.github.toilal.nsf4j.fs.handle.UniqueHandleGenerator;
+import io.github.toilal.nsf4j.fs.permission.PermissionsMapper;
 import org.dcache.nfs.vfs.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +21,8 @@ import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 public class WindowsNioFileSystem extends AbstractNioFileSystem<DosFileAttributes> {
     private static final Logger LOG = LoggerFactory.getLogger(WindowsNioFileSystem.class);
 
-    public WindowsNioFileSystem(Path root, UniqueHandleGenerator handleGenerator) {
-        super(root, handleGenerator);
+    public WindowsNioFileSystem(Path root, PermissionsMapper permissionsMapper, UniqueHandleGenerator handleGenerator) {
+        super(root, permissionsMapper, handleGenerator);
     }
 
     @Override
@@ -32,15 +33,13 @@ public class WindowsNioFileSystem extends AbstractNioFileSystem<DosFileAttribute
     @Override
     protected void applyFileAttributesToStat(Stat stat, Path path, DosFileAttributes attrs) throws IOException {
         super.applyFileAttributesToStat(stat, path, attrs);
-
-        stat.setGid(1000);
-        stat.setUid(1000);
-        int type = attrs.isSymbolicLink() ? Stat.S_IFLNK : attrs.isDirectory() ? Stat.S_IFDIR : Stat.S_IFREG;
-        stat.setMode(type | (attrs.isReadOnly() ? 0555 : 0777));
         stat.setNlink(1);
+
+        this.permissionsMapper.readPermissions(path, attrs, stat);
     }
 
     @Override
-    protected void applyOwnershipAndModeToPath(Path target, Subject subject, int mode) {
+    protected void applyOwnershipAndModeToPath(Path target, Subject subject, int mode) throws IOException {
+        this.permissionsMapper.writePermissions(target, subject, mode);
     }
 }

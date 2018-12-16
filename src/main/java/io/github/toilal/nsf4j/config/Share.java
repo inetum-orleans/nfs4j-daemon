@@ -8,6 +8,7 @@ import java.nio.file.Path;
 public class Share {
     private Path path;
     private String alias;
+    private Permissions permissions;
 
     public Share() {
     }
@@ -36,5 +37,13 @@ public class Share {
 
     public void setAlias(String alias) {
         this.alias = alias;
+    }
+
+    public Permissions getPermissions() {
+        return permissions;
+    }
+
+    public void setPermissions(Permissions permissions) {
+        this.permissions = permissions;
     }
 }

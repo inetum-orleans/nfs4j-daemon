@@ -7,6 +7,9 @@ import io.github.toilal.nsf4j.fs.DefaultFileSystemFactory;
 import io.github.toilal.nsf4j.fs.FileSystemFactory;
 import io.github.toilal.nsf4j.fs.RootFileSystem;
 import io.github.toilal.nsf4j.fs.handle.UniqueAtomicLongGenerator;
+import io.github.toilal.nsf4j.fs.permission.DefaultPermissionsMapperFactory;
+import io.github.toilal.nsf4j.fs.permission.PermissionsMapper;
+import io.github.toilal.nsf4j.fs.permission.PermissionsMapperFactory;
 import org.dcache.nfs.ExportFile;
 import org.dcache.nfs.v3.MountServer;
 import org.dcache.nfs.v3.NfsServerV3;
@@ -70,10 +73,16 @@ public class Daemon implements Closeable {
         UniqueAtomicLongGenerator uniqueHandleGenerator = new UniqueAtomicLongGenerator();
 
         FileSystemFactory fsFactory = new DefaultFileSystemFactory();
+        PermissionsMapperFactory permissionsMapperFactory = new DefaultPermissionsMapperFactory();
 
-        RootFileSystem vfs = new RootFileSystem(uniqueHandleGenerator);
+        RootFileSystem vfs = new RootFileSystem(config.getPermissions(), uniqueHandleGenerator);
+        PermissionsMapper defaultPermissionsMapper = permissionsMapperFactory.newPermissionsMapper(config.getPermissions());
         for (Share share : config.getShares()) {
-            AttachableFileSystem shareVfs = fsFactory.newFileSystem(share.getPath(), uniqueHandleGenerator);
+            PermissionsMapper permissionsMapper = defaultPermissionsMapper;
+            if (share.getPermissions() != null) {
+                permissionsMapper = permissionsMapperFactory.newPermissionsMapper(share.getPermissions());
+            }
+            AttachableFileSystem shareVfs = fsFactory.newFileSystem(share.getPath(), permissionsMapper, uniqueHandleGenerator);
             vfs.attachFileSystem(shareVfs, share.getAlias());
         }
 

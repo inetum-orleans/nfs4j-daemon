@@ -2,7 +2,9 @@ package io.github.toilal.nsf4j.fs;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import io.github.toilal.nsf4j.config.Permissions;
 import io.github.toilal.nsf4j.fs.handle.UniqueHandleGenerator;
+import io.github.toilal.nsf4j.fs.permission.SimpleLinuxPermissionsMapper;
 import org.dcache.nfs.v4.NfsIdMapping;
 import org.dcache.nfs.v4.xdr.nfsace4;
 import org.dcache.nfs.vfs.AclCheckable;
@@ -27,7 +29,7 @@ import java.util.Map;
  * A memory implementation of {@link VirtualFileSystem} that supports attaching others file systems {@link AttachableFileSystem} on given aliases.
  */
 public class RootFileSystem implements VirtualFileSystem {
-    private final JimfsNioFileSystem mainFs;
+    private final LinuxNioFileSystem mainFs;
     private Map<String, AttachableFileSystem> fileSystems = new LinkedHashMap<>();
 
     private static Path buildRootPath() {
@@ -39,8 +41,8 @@ public class RootFileSystem implements VirtualFileSystem {
                 .getRootDirectories().iterator().next();
     }
 
-    public RootFileSystem(UniqueHandleGenerator uniqueLongGenerator) {
-        mainFs = new JimfsNioFileSystem(buildRootPath(), uniqueLongGenerator);
+    public RootFileSystem(Permissions permissions, UniqueHandleGenerator uniqueLongGenerator) {
+        mainFs = new LinuxNioFileSystem(buildRootPath(), new SimpleLinuxPermissionsMapper(permissions), uniqueLongGenerator);
     }
 
     public void attachFileSystem(AttachableFileSystem fs, String path, String... morePath) {

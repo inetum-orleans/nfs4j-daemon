@@ -17,19 +17,19 @@ This project has been designed as an alternative to [winnfsd](https://github.com
 
 - Run `nfs4j-daemon`. With default options, it will publish the current working directory through NFS.
 
-```
+```bash
 java -jar nfs4j-daemon.jar
 ```
 
 - Windows users may use the `.exe` wrapper.
 
-```
+```bash
 nfs4j-daemon.exe
 ```
 
 - Mount the share on any OS supporting NFS.
 
-```
+```bash
 mkdir /mnt/nfs4j
 mount -t nfs 192.168.1.1:/ /mnt/nfs4j
 ```
@@ -40,18 +40,22 @@ All options are available through Command Line and Configuration File.
 
 ### Command Line
 
-```
+```bash
 java -jar nfs4j-daemon.jar --help
 ```
 
-```
-Usage: <main class> [-hu] [-c=<config>] [-e=<exports>] [-p=<port>] [<shares>...]
+```bash
+Usage: <main class> [-h] [--udp] [-c=<config>] [-e=<exports>] [-g=<gid>]
+                    [-m=<mask>] [-p=<port>] [-u=<uid>] [<shares>...]
       [<shares>...]         Directories to share
   -c, --config=<config>     Path to configuration file
-  -e, --exports=<exports>   Path to exports file (nsf4j advanced configuration)
-  -h, --help                Display this help message
+  -u, --uid=<uid>           Default user id to use for exported files
+  -g, --gid=<gid>           Default group id to use for exported files
+  -m, --mask=<mask>         Default mask to use for exported files
   -p, --port=<port>         Port to use
-  -u, --udp                 Use UDP instead of TCP
+      --udp                 Use UDP instead of TCP
+  -e, --exports=<exports>   Path to exports file (nsf4j advanced configuration)
+  -h, --help                Display this help message```
 ```
 
 ### Configuration File
@@ -59,9 +63,13 @@ Usage: <main class> [-hu] [-c=<config>] [-e=<exports>] [-p=<port>] [<shares>...]
 Configuration file is loaded from *nfs4j.yml* in working directory by default.
 
 You can set a custom filepath to this configuration file with `-c, --config=<config>` command line option.
-```
+```yaml
 port: 2048
 udp: false
+permissions:
+  gid: 1000
+  uid: 1000
+  mask: 0644
 shares:
   - 'C:\Users\Toilal\projects\planireza'
   - 'C:\Users\Toilal\projects\docker-devbox'
@@ -75,28 +83,28 @@ with backslashes.*
 
 - If no share is configured, the current working directory is published under the root alias ```/```.
 
-```
-// Server side
+```bash
+# Service side
 java -jar nfs4j-daemon.jar
-// Client side
+# Client side
 mount -t nfs 192.168.1.1:/ /mnt/nfs4j
 ```
 
 - If a single share is configured, it's published under the root alias ```/```.
 
-```
-// Server side
+```bash
+# Service side
 java -jar nfs4j-daemon.jar C:\my\folder
-// Client side
+# Client side
 mount -t nfs 192.168.1.1:/ /mnt/nfs4j
 ```
 
 - If many shares are configured, they will be aliased automatically based on their local path.
 
-```
-// Server side
+```bash
+# Server side
 java -jar nfs4j-daemon.jar C:\my\folder D:\another\folder
-// Client side
+# Client side
 mount -t nfs 192.168.1.1:/C/my/folder /mnt/nfs4j-1
 mount -t nfs 192.168.1.1:/D/another/folder /mnt/nfs4j-2
 ```
@@ -105,9 +113,9 @@ mount -t nfs 192.168.1.1:/D/another/folder /mnt/nfs4j-2
 ```:``` as separator.
 
 ```
-// Server side
+# Service side
 java -jar nfs4j-daemon.jar C:\my\folder:/folder1 D:\another\folder:/folder2
-// Client side
+# Client side
 mount -t nfs 192.168.1.1:/folder1 /mnt/nfs4j-1
 mount -t nfs 192.168.1.1:/folder2 /mnt/nfs4j-2
 ```

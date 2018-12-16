@@ -4,6 +4,7 @@ import io.github.toilal.nsf4j.fs.handle.HandleRegistry;
 import io.github.toilal.nsf4j.fs.handle.PathHandleRegistry;
 import io.github.toilal.nsf4j.fs.handle.UniqueHandleGenerator;
 import io.github.toilal.nsf4j.fs.io.FileSystemReaderWriter;
+import io.github.toilal.nsf4j.fs.permission.PermissionsMapper;
 import org.dcache.nfs.status.BadNameException;
 import org.dcache.nfs.status.ExistException;
 import org.dcache.nfs.status.NoEntException;
@@ -58,16 +59,18 @@ public abstract class AbstractNioFileSystem<A extends BasicFileAttributes> imple
 
     protected final long rootFileHandle;
     protected final Path root;
+    protected final PermissionsMapper permissionsMapper;
     protected final HandleRegistry<Path> handleRegistry;
 
-    public AbstractNioFileSystem(Path root, UniqueHandleGenerator handleGenerator) {
+    public AbstractNioFileSystem(Path root, PermissionsMapper permissionsMapper, UniqueHandleGenerator handleGenerator) {
         this.root = root;
+        this.permissionsMapper = permissionsMapper;
         this.handleRegistry = new PathHandleRegistry(handleGenerator);
         this.rootFileHandle = handleRegistry.add(this.root);
         this.fileSystemReaderWriter = new FileSystemReaderWriter(handleRegistry);
     }
 
-    abstract protected void applyOwnershipAndModeToPath(Path target, Subject subject, int mode);
+    abstract protected void applyOwnershipAndModeToPath(Path target, Subject subject, int mode) throws IOException;
 
     abstract protected A getFileAttributes(Path path) throws IOException;
 

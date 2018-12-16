@@ -8,6 +8,7 @@ import org.yaml.snakeyaml.Yaml;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Command;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,6 +21,7 @@ import java.util.concurrent.Callable;
 /**
  * Main entrypoint for nfs4j daemon.
  */
+@Command(sortOptions = false)
 public class Main implements Callable<Void> {
     @Option(names = {"-c", "--config"}, description = "Path to configuration file", defaultValue = "nfs4j.yml")
     private Path config;
@@ -27,10 +29,19 @@ public class Main implements Callable<Void> {
     @Parameters(description = "Directories to share")
     private List<String> shares;
 
+    @Option(names = {"-u", "--uid"}, description = "Default user id to use for exported files")
+    private Integer uid;
+
+    @Option(names = {"-g", "--gid"}, description = "Default group id to use for exported files")
+    private Integer gid;
+
+    @Option(names = {"-m", "--mask"}, description = "Default mask to use for exported files")
+    private Integer mask;
+
     @Option(names = {"-p", "--port"}, description = "Port to use")
     private Integer port;
 
-    @Option(names = {"-u", "--udp"}, description = "Use UDP instead of TCP")
+    @Option(names = {"--udp"}, description = "Use UDP instead of TCP")
     private Boolean udp;
 
     @Option(names = {"-e", "--exports"}, description = "Path to exports file (nsf4j advanced configuration)")
@@ -72,6 +83,18 @@ public class Main implements Callable<Void> {
 
         if (this.udp != null) {
             config.setUdp(this.udp);
+        }
+
+        if (this.uid != null) {
+            config.getPermissions().setUid(uid);
+        }
+
+        if (this.gid != null) {
+            config.getPermissions().setGid(gid);
+        }
+
+        if (this.mask != null) {
+            config.getPermissions().setMask(mask);
         }
 
         if (this.shares != null) {
