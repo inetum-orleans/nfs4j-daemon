@@ -42,7 +42,7 @@ public class CustomConstructor extends Constructor {
         @Override
         public Object construct(Node node) {
             String shareStr = constructScalar((ScalarNode) node);
-            return new Share(Paths.get(shareStr));
+            return Share.fromString(shareStr);
         }
     }
 }

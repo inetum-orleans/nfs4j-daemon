@@ -1,6 +1,7 @@
 package io.github.toilal.nsf4j.config;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Configuration of a share.
@@ -21,6 +22,15 @@ public class Share {
     public Share(Path path, String alias) {
         this.path = path;
         this.alias = alias;
+    }
+
+    public static Share fromString(String share) {
+        int lastIndex = share.lastIndexOf(':');
+        if (lastIndex > 1) {
+            return new Share(Paths.get(share.substring(0, lastIndex)), share.substring(lastIndex + 1));
+        } else {
+            return new Share(Paths.get(share));
+        }
     }
 
     public Path getPath() {

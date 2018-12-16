@@ -101,12 +101,7 @@ public class Main implements Callable<Void> {
             List<Share> configShares = config.getShares();
             configShares.clear();
             for (String share : this.shares) {
-                int lastIndex = share.lastIndexOf(':');
-                if (lastIndex > 1) {
-                    configShares.add(new Share(Paths.get(share.substring(0, lastIndex)), share.substring(lastIndex + 1)));
-                } else {
-                    configShares.add(new Share(Paths.get(share)));
-                }
+                configShares.add(Share.fromString(share));
             }
         }
 
