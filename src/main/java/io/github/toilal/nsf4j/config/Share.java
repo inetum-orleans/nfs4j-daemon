@@ -12,6 +12,11 @@ public class Share {
     public Share() {
     }
 
+    public Share(Path path) {
+        this.path = path;
+        this.alias = alias;
+    }
+
     public Share(Path path, String alias) {
         this.path = path;
         this.alias = alias;

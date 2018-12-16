@@ -7,11 +7,13 @@ import io.github.toilal.nsf4j.config.Share;
 import org.yaml.snakeyaml.Yaml;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 
@@ -22,17 +24,20 @@ public class Main implements Callable<Void> {
     @Option(names = {"-c", "--config"}, description = "Path to configuration file", defaultValue = "nfs4j.yml")
     private Path config;
 
-    @Option(names = {"-s", "--share"}, description = "Root directory to serve")
-    private Path share;
+    @Parameters(description = "Directories to share")
+    private List<String> shares;
 
-    @Option(names = {"-p", "--port"}, description = "RPC port to use")
+    @Option(names = {"-p", "--port"}, description = "Port to use")
     private Integer port;
 
     @Option(names = {"-u", "--udp"}, description = "Use UDP instead of TCP")
     private Boolean udp;
 
-    @Option(names = {"-e", "--exports"}, description = "Path to exports file")
+    @Option(names = {"-e", "--exports"}, description = "Path to exports file (nsf4j advanced configuration)")
     private Path exports;
+
+    @Option(names = {"-h", "--help"}, usageHelp = true, description = "Display this help message")
+    boolean help;
 
     private Daemon daemon;
 
@@ -42,6 +47,11 @@ public class Main implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
+        if (this.help) {
+            CommandLine.usage(this, System.out);
+            return null;
+        }
+
         Yaml yaml = new Yaml(new CustomConstructor(), new CustomRepresenter());
         Config config = null;
 
@@ -64,8 +74,35 @@ public class Main implements Callable<Void> {
             config.setUdp(this.udp);
         }
 
-        if (this.share != null) {
-            config.setShares(Arrays.asList(new Share(this.share, "/")));
+        if (this.shares != null) {
+            List<Share> configShares = config.getShares();
+            configShares.clear();
+            for (String share : this.shares) {
+                int lastIndex = share.lastIndexOf(':');
+                if (lastIndex > 1) {
+                    configShares.add(new Share(Paths.get(share.substring(0, lastIndex)), share.substring(lastIndex + 1)));
+                } else {
+                    configShares.add(new Share(Paths.get(share)));
+                }
+            }
+        }
+
+        if (config.getShares().size() <= 0) {
+            throw new IllegalArgumentException("At least one share should be defined.");
+        }
+
+        for (Share share : config.getShares()) {
+            if (share.getAlias() == null) {
+                if (config.getShares().size() > 1) {
+                    String defaultAlias = share.getPath().toAbsolutePath().normalize().toString().replace(":", "").replace(File.separator, "/");
+                    if (!defaultAlias.startsWith("/")) {
+                        defaultAlias = "/" + defaultAlias;
+                    }
+                    share.setAlias(defaultAlias);
+                } else {
+                    share.setAlias("/");
+                }
+            }
         }
 
         if (this.exports != null) {

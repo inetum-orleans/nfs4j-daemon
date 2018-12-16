@@ -14,12 +14,18 @@ public class CustomConstructor extends Constructor {
     public CustomConstructor() {
         this.yamlConstructors.put(new Tag(Path.class), new PathConstruct());
         this.addTypeDescription(new TypeDescription(PathConstruct.class, new Tag(Path.class)));
+
+        this.yamlConstructors.put(new Tag(Share.class), new ShareConstruct());
+        this.addTypeDescription(new TypeDescription(ShareConstruct.class, new Tag(Share.class)));
     }
 
     @Override
     protected Object newInstance(Class<?> ancestor, Node node, boolean tryDefault) throws InstantiationException {
         if (Path.class.isAssignableFrom(ancestor)) {
             return this.yamlConstructors.get(new Tag(Path.class)).construct(node);
+        }
+        if (Share.class.isAssignableFrom(ancestor)) {
+            return this.yamlConstructors.get(new Tag(Share.class)).construct(node);
         }
         return super.newInstance(ancestor, node, tryDefault);
     }
@@ -29,6 +35,14 @@ public class CustomConstructor extends Constructor {
         public Object construct(Node node) {
             String pathStr = constructScalar((ScalarNode) node);
             return Paths.get(pathStr);
+        }
+    }
+
+    private class ShareConstruct extends AbstractConstruct {
+        @Override
+        public Object construct(Node node) {
+            String shareStr = constructScalar((ScalarNode) node);
+            return new Share(Paths.get(shareStr));
         }
     }
 }
