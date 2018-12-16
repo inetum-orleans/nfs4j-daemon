@@ -130,3 +130,12 @@ shares:
     alias: '/folder2'
 ```
 
+## Symbolic links support on Windows
+
+On default Windows installation, unprivileged user can't create symbolic links, so nfs4j may fail to create symbolic 
+links too.
+
+You have some options to workaround this issue.
+
+- Run `nfs4j-daemon` as Administrator.
+- Tweak the Local Group Policy to allow *Create symbolic links* to the user running `nfs4j-daemon`. (See this [StackOverflow post](https://superuser.com/questions/104845/permission-to-make-symbolic-links-in-windows-7#answer-105381))
