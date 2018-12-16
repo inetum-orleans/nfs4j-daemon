@@ -18,12 +18,13 @@ public class SimpleLinuxPermissionsMapper extends AbstractSimplePermissionsMappe
         super.readPermissions(path, attrs, stat);
 
         int type = attrs.isSymbolicLink() ? Stat.S_IFLNK : attrs.isDirectory() ? Stat.S_IFDIR : Stat.S_IFREG;
-        stat.setMode(type | permissions.getMask());
+        int mask = permissions.getMask();
         if (attrs.isDirectory()) {
-            stat.setMode(stat.getMode() | 0111);
+            mask = mask | 0111;
         }
         if (!attrs.permissions().contains(PosixFilePermission.OWNER_WRITE)) {
-            stat.setMode(stat.getMode() & 0555);
+            mask = mask & 0555;
         }
+        stat.setMode(type | mask);
     }
 }
