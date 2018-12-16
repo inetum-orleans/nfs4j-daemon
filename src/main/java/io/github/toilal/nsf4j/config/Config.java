@@ -11,6 +11,7 @@ import java.util.List;
 public class Config {
     private int port = 2049;
     private boolean udp = false;
+    private boolean portmapDisabled = false;
     private Permissions permissions = new Permissions();
     private List<Share> shares = Arrays.asList(new Share(Paths.get(".")));
     private Path exportFile;
@@ -33,6 +34,14 @@ public class Config {
 
     public void setUdp(boolean udp) {
         this.udp = udp;
+    }
+
+    public boolean isPortmapDisabled() {
+        return portmapDisabled;
+    }
+
+    public void setPortmapDisabled(boolean portmapDisabled) {
+        this.portmapDisabled = portmapDisabled;
     }
 
     public Permissions getPermissions() {

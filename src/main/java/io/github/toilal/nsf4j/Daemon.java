@@ -18,6 +18,7 @@ import org.dcache.nfs.v3.xdr.nfs3_prot;
 import org.dcache.nfs.v4.MDSOperationFactory;
 import org.dcache.nfs.v4.NFSServerV41;
 import org.dcache.nfs.v4.xdr.nfs4_prot;
+import org.dcache.oncrpc4j.portmap.OncRpcEmbeddedPortmap;
 import org.dcache.oncrpc4j.rpc.IoStrategy;
 import org.dcache.oncrpc4j.rpc.OncRpcProgram;
 import org.dcache.oncrpc4j.rpc.OncRpcSvc;
@@ -37,6 +38,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class Daemon implements Closeable {
     private final OncRpcSvc nfsSvc;
+    private OncRpcEmbeddedPortmap portmapSvc = null;
 
     public Daemon(Config config) {
         ExportFile exportFile;
@@ -95,6 +97,10 @@ public class Daemon implements Closeable {
         NfsServerV3 nfs3 = new NfsServerV3(exportFile, vfs);
         MountServer mountd = new MountServer(exportFile, vfs);
 
+        if (!config.isPortmapDisabled()) {
+            portmapSvc = new OncRpcEmbeddedPortmap();
+        }
+
         nfsSvc.register(new OncRpcProgram(mount_prot.MOUNT_PROGRAM, mount_prot.MOUNT_V3), mountd);
         nfsSvc.register(new OncRpcProgram(nfs3_prot.NFS_PROGRAM, nfs3_prot.NFS_V3), nfs3);
         nfsSvc.register(new OncRpcProgram(nfs4_prot.NFS4_PROGRAM, nfs4_prot.NFS_V4), nfs4);
@@ -107,5 +113,8 @@ public class Daemon implements Closeable {
     @Override
     public void close() throws IOException {
         nfsSvc.stop();
+        if (portmapSvc != null) {
+            portmapSvc.shutdown();
+        }
     }
 }

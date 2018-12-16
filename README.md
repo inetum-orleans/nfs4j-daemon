@@ -45,8 +45,9 @@ java -jar nfs4j-daemon.jar --help
 ```
 
 ```bash
-Usage: <main class> [-h] [--udp] [-c=<config>] [-e=<exports>] [-g=<gid>]
-                    [-m=<mask>] [-p=<port>] [-u=<uid>] [<shares>...]
+Usage: <main class> [-h] [--portmap-disabled] [--udp] [-c=<config>]
+                    [-e=<exports>] [-g=<gid>] [-m=<mask>] [-p=<port>]
+                    [-u=<uid>] [<shares>...]
       [<shares>...]         Directories to share
   -c, --config=<config>     Path to configuration file
   -u, --uid=<uid>           Default user id to use for exported files
@@ -54,8 +55,9 @@ Usage: <main class> [-h] [--udp] [-c=<config>] [-e=<exports>] [-g=<gid>]
   -m, --mask=<mask>         Default mask to use for exported files
   -p, --port=<port>         Port to use
       --udp                 Use UDP instead of TCP
+      --portmap-disabled    Disable embedded portmap service
   -e, --exports=<exports>   Path to exports file (nsf4j advanced configuration)
-  -h, --help                Display this help message```
+  -h, --help                Display this help message
 ```
 
 ### Configuration File

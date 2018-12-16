@@ -44,6 +44,9 @@ public class Main implements Callable<Void> {
     @Option(names = {"--udp"}, description = "Use UDP instead of TCP")
     private Boolean udp;
 
+    @Option(names = {"--portmap-disabled"}, description = "Disable embedded portmap service")
+    private Boolean portmapDisabled;
+
     @Option(names = {"-e", "--exports"}, description = "Path to exports file (nsf4j advanced configuration)")
     private Path exports;
 
@@ -83,6 +86,10 @@ public class Main implements Callable<Void> {
 
         if (this.udp != null) {
             config.setUdp(this.udp);
+        }
+
+        if (this.portmapDisabled != null) {
+            config.setPortmapDisabled(this.portmapDisabled);
         }
 
         if (this.uid != null) {
