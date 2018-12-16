@@ -2,6 +2,7 @@ package io.github.toilal.nsf4j.config;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -13,7 +14,7 @@ public class Config {
     private boolean udp = false;
     private boolean portmapDisabled = false;
     private Permissions permissions = new Permissions();
-    private List<Share> shares = Arrays.asList(new Share(Paths.get(".")));
+    private List<Share> shares = new ArrayList<>(Arrays.asList(new Share(Paths.get("."))));
     private Path exportFile;
 
     public Config() {
