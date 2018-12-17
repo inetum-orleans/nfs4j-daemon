@@ -1,6 +1,7 @@
 package io.github.toilal.nsf4j;
 
 import io.github.toilal.nsf4j.api.Api;
+import io.github.toilal.nsf4j.api.JsonTransformer;
 import io.github.toilal.nsf4j.config.Config;
 import io.github.toilal.nsf4j.config.ShareConfig;
 import io.github.toilal.nsf4j.fs.AttachableFileSystem;
@@ -152,7 +153,9 @@ public class Daemon implements Closeable {
 
     public Object getStatus() {
         Status status = new Status();
-        status.setConfig(this.config);
+        Config configCopy = JsonTransformer.gson.fromJson(JsonTransformer.gson.toJson(this.config), Config.class);
+        configCopy.setShares(null);
+        status.setConfig(configCopy);
         List<StatusShare> shares = new ArrayList<>();
         for (Map.Entry<String, AttachableFileSystem> vfsEntry : this.vfs.getFileSystems().entrySet()) {
             shares.add(new StatusShare(vfsEntry.getKey(), vfsEntry.getValue().getRoot().toString()));

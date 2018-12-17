@@ -52,6 +52,9 @@ public class Main implements Callable<Void> {
     @Option(names = {"--api-bearer"}, description = "Bearer to use for API authentication")
     private String apiBearer;
 
+    @Option(names = {"--no-share"}, description = "Disable default share and configured shares")
+    private Boolean noShare;
+
     @Option(names = {"--udp"}, description = "Use UDP instead of TCP")
     private Boolean udp;
 
@@ -115,7 +118,7 @@ public class Main implements Callable<Void> {
             config.getPermissions().setMask(mask);
         }
 
-        if (this.api || this.apiPort != null || this.apiIp != null || this.apiBearer != null) {
+        if (this.api != null || this.apiPort != null || this.apiIp != null || this.apiBearer != null) {
             ApiConfig apiConfig = new ApiConfig();
 
             if (this.apiPort != null) {
@@ -133,30 +136,38 @@ public class Main implements Callable<Void> {
             config.setApi(apiConfig);
         }
 
-        if (this.shares != null) {
-            List<ShareConfig> configShares = config.getShares();
-            configShares.clear();
-            for (String share : this.shares) {
-                configShares.add(ShareConfig.fromString(share));
-            }
+        if (this.noShare != null) {
+            config.setNoShare(this.noShare);
         }
 
-        if (config.getShares().size() <= 0) {
-            throw new IllegalArgumentException("At least one share should be defined.");
-        }
-
-        for (ShareConfig share : config.getShares()) {
-            if (share.getAlias() == null) {
-                if (config.getShares().size() > 1) {
-                    String defaultAlias = share.getPath().toAbsolutePath().normalize().toString().replace(":", "").replace(File.separator, "/");
-                    if (!defaultAlias.startsWith("/")) {
-                        defaultAlias = "/" + defaultAlias;
-                    }
-                    share.setAlias(defaultAlias);
-                } else {
-                    share.setAlias("/");
+        if (config.getNoShare() == null || !config.getNoShare()) {
+            if (this.shares != null) {
+                List<ShareConfig> configShares = config.getShares();
+                configShares.clear();
+                for (String share : this.shares) {
+                    configShares.add(ShareConfig.fromString(share));
                 }
             }
+
+            if (config.getShares().size() <= 0) {
+                throw new IllegalArgumentException("At least one share should be defined.");
+            }
+
+            for (ShareConfig share : config.getShares()) {
+                if (share.getAlias() == null) {
+                    if (config.getShares().size() > 1) {
+                        String defaultAlias = share.getPath().toAbsolutePath().normalize().toString().replace(":", "").replace(File.separator, "/");
+                        if (!defaultAlias.startsWith("/")) {
+                            defaultAlias = "/" + defaultAlias;
+                        }
+                        share.setAlias(defaultAlias);
+                    } else {
+                        share.setAlias("/");
+                    }
+                }
+            }
+        } else {
+            config.getShares().clear();
         }
 
         if (this.exports != null) {

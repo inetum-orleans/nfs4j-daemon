@@ -15,6 +15,7 @@ public class Config {
     private boolean portmapDisabled = false;
     private ApiConfig api = null;
     private PermissionsConfig permissions = new PermissionsConfig();
+    private Boolean noShare = null;
     private List<ShareConfig> shares = new ArrayList<>(Arrays.asList(new ShareConfig(Paths.get("."))));
     private Path exportFile;
 
@@ -68,6 +69,14 @@ public class Config {
 
     public void setExportFile(Path exportFile) {
         this.exportFile = exportFile;
+    }
+
+    public Boolean getNoShare() {
+        return noShare;
+    }
+
+    public void setNoShare(Boolean noShare) {
+        this.noShare = noShare;
     }
 
     public List<ShareConfig> getShares() {
