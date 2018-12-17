@@ -1,6 +1,6 @@
 package io.github.toilal.nsf4j.fs.permission;
 
-import io.github.toilal.nsf4j.config.Permissions;
+import io.github.toilal.nsf4j.config.PermissionsConfig;
 import org.dcache.nfs.vfs.Stat;
 
 import java.io.IOException;
@@ -9,7 +9,7 @@ import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 
 public class SimpleLinuxPermissionsMapper extends AbstractSimplePermissionsMapper<PosixFileAttributes> {
-    public SimpleLinuxPermissionsMapper(Permissions permissions) {
+    public SimpleLinuxPermissionsMapper(PermissionsConfig permissions) {
         super(permissions);
     }
 

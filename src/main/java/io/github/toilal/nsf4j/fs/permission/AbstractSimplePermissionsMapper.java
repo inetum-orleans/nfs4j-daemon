@@ -1,6 +1,6 @@
 package io.github.toilal.nsf4j.fs.permission;
 
-import io.github.toilal.nsf4j.config.Permissions;
+import io.github.toilal.nsf4j.config.PermissionsConfig;
 import org.dcache.nfs.vfs.Stat;
 
 import javax.security.auth.Subject;
@@ -9,9 +9,9 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 
 public abstract class AbstractSimplePermissionsMapper<A extends BasicFileAttributes> implements PermissionsMapper<A> {
-    protected final Permissions permissions;
+    protected final PermissionsConfig permissions;
 
-    public AbstractSimplePermissionsMapper(Permissions permissions) {
+    public AbstractSimplePermissionsMapper(PermissionsConfig permissions) {
         this.permissions = permissions;
     }
 

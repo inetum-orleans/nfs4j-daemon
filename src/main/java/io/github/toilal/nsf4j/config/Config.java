@@ -13,8 +13,9 @@ public class Config {
     private int port = 2049;
     private boolean udp = false;
     private boolean portmapDisabled = false;
-    private Permissions permissions = new Permissions();
-    private List<Share> shares = new ArrayList<>(Arrays.asList(new Share(Paths.get("."))));
+    private ApiConfig api = null;
+    private PermissionsConfig permissions = new PermissionsConfig();
+    private List<ShareConfig> shares = new ArrayList<>(Arrays.asList(new ShareConfig(Paths.get("."))));
     private Path exportFile;
 
     public Config() {
@@ -45,11 +46,19 @@ public class Config {
         this.portmapDisabled = portmapDisabled;
     }
 
-    public Permissions getPermissions() {
+    public ApiConfig getApi() {
+        return api;
+    }
+
+    public void setApi(ApiConfig api) {
+        this.api = api;
+    }
+
+    public PermissionsConfig getPermissions() {
         return permissions;
     }
 
-    public void setPermissions(Permissions permissions) {
+    public void setPermissions(PermissionsConfig permissions) {
         this.permissions = permissions;
     }
 
@@ -61,11 +70,11 @@ public class Config {
         this.exportFile = exportFile;
     }
 
-    public List<Share> getShares() {
+    public List<ShareConfig> getShares() {
         return shares;
     }
 
-    public void setShares(List<Share> shares) {
+    public void setShares(List<ShareConfig> shares) {
         this.shares = shares;
     }
 }

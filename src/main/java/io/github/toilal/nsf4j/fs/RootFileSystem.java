@@ -2,7 +2,7 @@ package io.github.toilal.nsf4j.fs;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import io.github.toilal.nsf4j.config.Permissions;
+import io.github.toilal.nsf4j.config.PermissionsConfig;
 import io.github.toilal.nsf4j.fs.handle.UniqueHandleGenerator;
 import io.github.toilal.nsf4j.fs.permission.SimpleLinuxPermissionsMapper;
 import org.dcache.nfs.v4.NfsIdMapping;
@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ public class RootFileSystem implements VirtualFileSystem {
                 .getRootDirectories().iterator().next();
     }
 
-    public RootFileSystem(Permissions permissions, UniqueHandleGenerator uniqueLongGenerator) {
+    public RootFileSystem(PermissionsConfig permissions, UniqueHandleGenerator uniqueLongGenerator) {
         mainFs = new LinuxNioFileSystem(buildRootPath(), new SimpleLinuxPermissionsMapper(permissions), uniqueLongGenerator);
     }
 
@@ -53,6 +54,15 @@ public class RootFileSystem implements VirtualFileSystem {
         } catch (IOException e) {
             throw new IOError(e);
         }
+    }
+
+    public Map<String, AttachableFileSystem> getFileSystems() {
+        return Collections.unmodifiableMap(fileSystems);
+    }
+
+    public AttachableFileSystem detachFileSystem(String path, String... morePath) {
+        Path aliasPath = mainFs.root.getFileSystem().getPath(path, morePath).normalize();
+        return fileSystems.remove(aliasPath.toString());
     }
 
     protected AttachableFileSystem delegate(Inode inode) {

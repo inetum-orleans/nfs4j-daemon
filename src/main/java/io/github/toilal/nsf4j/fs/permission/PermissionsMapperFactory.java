@@ -1,8 +1,8 @@
 package io.github.toilal.nsf4j.fs.permission;
 
-import io.github.toilal.nsf4j.config.Permissions;
+import io.github.toilal.nsf4j.config.PermissionsConfig;
 
 public interface PermissionsMapperFactory {
-    PermissionsMapper newPermissionsMapper(Permissions permissions);
+    PermissionsMapper newPermissionsMapper(PermissionsConfig permissions);
 }
 

@@ -15,8 +15,8 @@ public class CustomConstructor extends Constructor {
         this.yamlConstructors.put(new Tag(Path.class), new PathConstruct());
         this.addTypeDescription(new TypeDescription(PathConstruct.class, new Tag(Path.class)));
 
-        this.yamlConstructors.put(new Tag(Share.class), new ShareConstruct());
-        this.addTypeDescription(new TypeDescription(ShareConstruct.class, new Tag(Share.class)));
+        this.yamlConstructors.put(new Tag(ShareConfig.class), new ShareConfigConstruct());
+        this.addTypeDescription(new TypeDescription(ShareConfigConstruct.class, new Tag(ShareConfig.class)));
     }
 
     @Override
@@ -24,8 +24,8 @@ public class CustomConstructor extends Constructor {
         if (Path.class.isAssignableFrom(ancestor)) {
             return this.yamlConstructors.get(new Tag(Path.class)).construct(node);
         }
-        if (Share.class.isAssignableFrom(ancestor)) {
-            return this.yamlConstructors.get(new Tag(Share.class)).construct(node);
+        if (ShareConfig.class.isAssignableFrom(ancestor)) {
+            return this.yamlConstructors.get(new Tag(ShareConfig.class)).construct(node);
         }
         return super.newInstance(ancestor, node, tryDefault);
     }
@@ -38,11 +38,11 @@ public class CustomConstructor extends Constructor {
         }
     }
 
-    private class ShareConstruct extends AbstractConstruct {
+    private class ShareConfigConstruct extends AbstractConstruct {
         @Override
         public Object construct(Node node) {
             String shareStr = constructScalar((ScalarNode) node);
-            return Share.fromString(shareStr);
+            return ShareConfig.fromString(shareStr);
         }
     }
 }

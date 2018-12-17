@@ -79,6 +79,11 @@ public abstract class AbstractNioFileSystem<A extends BasicFileAttributes> imple
         return this.handleRegistry.hasInode(inode);
     }
 
+    @Override
+    public Path getRoot() {
+        return root;
+    }
+
     protected void applyStatToPath(Stat stat, Path path) throws IOException {
         if (stat.isDefined(Stat.StatAttribute.SIZE)) {
             try (RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")) {

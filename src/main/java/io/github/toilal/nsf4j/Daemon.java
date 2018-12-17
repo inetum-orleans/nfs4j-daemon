@@ -1,15 +1,16 @@
 package io.github.toilal.nsf4j;
 
+import io.github.toilal.nsf4j.api.Api;
 import io.github.toilal.nsf4j.config.Config;
-import io.github.toilal.nsf4j.config.Share;
+import io.github.toilal.nsf4j.config.ShareConfig;
 import io.github.toilal.nsf4j.fs.AttachableFileSystem;
 import io.github.toilal.nsf4j.fs.DefaultFileSystemFactory;
-import io.github.toilal.nsf4j.fs.FileSystemFactory;
 import io.github.toilal.nsf4j.fs.RootFileSystem;
 import io.github.toilal.nsf4j.fs.handle.UniqueAtomicLongGenerator;
 import io.github.toilal.nsf4j.fs.permission.DefaultPermissionsMapperFactory;
 import io.github.toilal.nsf4j.fs.permission.PermissionsMapper;
-import io.github.toilal.nsf4j.fs.permission.PermissionsMapperFactory;
+import io.github.toilal.nsf4j.status.Status;
+import io.github.toilal.nsf4j.status.StatusShare;
 import org.dcache.nfs.ExportFile;
 import org.dcache.nfs.v3.MountServer;
 import org.dcache.nfs.v3.NfsServerV3;
@@ -32,15 +33,27 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * nfs4j Daemon.
  */
 public class Daemon implements Closeable {
     private final OncRpcSvc nfsSvc;
+    private final PermissionsMapper defaultPermissionsMapper;
+    private final DefaultPermissionsMapperFactory permissionsMapperFactory;
+    private final DefaultFileSystemFactory fsFactory;
+    private final UniqueAtomicLongGenerator uniqueHandleGenerator;
+    private final Config config;
+    private RootFileSystem vfs;
+    private Api api;
     private OncRpcEmbeddedPortmap portmapSvc = null;
 
     public Daemon(Config config) {
+        this.config = config;
+
         ExportFile exportFile;
         if (config.getExportFile() == null) {
             try (InputStream stream = this.getClass().getClassLoader().getResourceAsStream("exports")) {
@@ -72,20 +85,15 @@ public class Daemon implements Closeable {
 
         nfsSvc = rpcBuilder.build();
 
-        UniqueAtomicLongGenerator uniqueHandleGenerator = new UniqueAtomicLongGenerator();
+        uniqueHandleGenerator = new UniqueAtomicLongGenerator();
 
-        FileSystemFactory fsFactory = new DefaultFileSystemFactory();
-        PermissionsMapperFactory permissionsMapperFactory = new DefaultPermissionsMapperFactory();
+        fsFactory = new DefaultFileSystemFactory();
+        permissionsMapperFactory = new DefaultPermissionsMapperFactory();
 
-        RootFileSystem vfs = new RootFileSystem(config.getPermissions(), uniqueHandleGenerator);
-        PermissionsMapper defaultPermissionsMapper = permissionsMapperFactory.newPermissionsMapper(config.getPermissions());
-        for (Share share : config.getShares()) {
-            PermissionsMapper permissionsMapper = defaultPermissionsMapper;
-            if (share.getPermissions() != null) {
-                permissionsMapper = permissionsMapperFactory.newPermissionsMapper(share.getPermissions());
-            }
-            AttachableFileSystem shareVfs = fsFactory.newFileSystem(share.getPath(), permissionsMapper, uniqueHandleGenerator);
-            vfs.attachFileSystem(shareVfs, share.getAlias());
+        vfs = new RootFileSystem(config.getPermissions(), uniqueHandleGenerator);
+        defaultPermissionsMapper = permissionsMapperFactory.newPermissionsMapper(config.getPermissions());
+        for (ShareConfig share : config.getShares()) {
+            attach(share);
         }
 
         NFSServerV41 nfs4 = new NFSServerV41.Builder()
@@ -104,17 +112,52 @@ public class Daemon implements Closeable {
         nfsSvc.register(new OncRpcProgram(mount_prot.MOUNT_PROGRAM, mount_prot.MOUNT_V3), mountd);
         nfsSvc.register(new OncRpcProgram(nfs3_prot.NFS_PROGRAM, nfs3_prot.NFS_V3), nfs3);
         nfsSvc.register(new OncRpcProgram(nfs4_prot.NFS4_PROGRAM, nfs4_prot.NFS_V4), nfs4);
+
+        if (config.getApi() != null) {
+            api = new Api(config.getApi(), this);
+        }
+    }
+
+    public AttachableFileSystem attach(ShareConfig share) {
+        PermissionsMapper permissionsMapper = defaultPermissionsMapper;
+        if (share.getPermissions() != null) {
+            permissionsMapper = permissionsMapperFactory.newPermissionsMapper(share.getPermissions());
+        }
+        AttachableFileSystem shareVfs = fsFactory.newFileSystem(share.getPath(), permissionsMapper, uniqueHandleGenerator);
+        vfs.attachFileSystem(shareVfs, share.getAlias());
+        return shareVfs;
+    }
+
+    public AttachableFileSystem detach(ShareConfig share) {
+        return vfs.detachFileSystem(share.getAlias());
     }
 
     public void start() throws IOException {
         nfsSvc.start();
+        if (api != null) {
+            api.start();
+        }
     }
 
     @Override
     public void close() throws IOException {
-        nfsSvc.stop();
+        if (api != null) {
+            api.stop();
+        }
         if (portmapSvc != null) {
             portmapSvc.shutdown();
         }
+        nfsSvc.stop();
+    }
+
+    public Object getStatus() {
+        Status status = new Status();
+        status.setConfig(this.config);
+        List<StatusShare> shares = new ArrayList<>();
+        for (Map.Entry<String, AttachableFileSystem> vfsEntry : this.vfs.getFileSystems().entrySet()) {
+            shares.add(new StatusShare(vfsEntry.getKey(), vfsEntry.getValue().getRoot().toString()));
+        }
+        status.setShares(shares);
+        return status;
     }
 }

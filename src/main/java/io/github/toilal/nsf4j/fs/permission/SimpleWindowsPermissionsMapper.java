@@ -1,6 +1,6 @@
 package io.github.toilal.nsf4j.fs.permission;
 
-import io.github.toilal.nsf4j.config.Permissions;
+import io.github.toilal.nsf4j.config.PermissionsConfig;
 import org.dcache.nfs.vfs.Stat;
 
 import java.io.IOException;
@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.DosFileAttributes;
 
 public class SimpleWindowsPermissionsMapper extends AbstractSimplePermissionsMapper<DosFileAttributes> {
-    public SimpleWindowsPermissionsMapper(Permissions permissions) {
+    public SimpleWindowsPermissionsMapper(PermissionsConfig permissions) {
         super(permissions);
     }
 

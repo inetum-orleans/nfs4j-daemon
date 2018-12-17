@@ -2,7 +2,7 @@ package io.github.toilal.nsf4j.config;
 
 import io.github.toilal.nsf4j.fs.permission.PermissionsMapperType;
 
-public class Permissions {
+public class PermissionsConfig {
     PermissionsMapperType type = PermissionsMapperType.SIMPLE;
 
     int uid = 0;

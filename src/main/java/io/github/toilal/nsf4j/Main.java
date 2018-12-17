@@ -1,22 +1,21 @@
 package io.github.toilal.nsf4j;
 
+import io.github.toilal.nsf4j.config.ApiConfig;
 import io.github.toilal.nsf4j.config.Config;
 import io.github.toilal.nsf4j.config.CustomConstructor;
 import io.github.toilal.nsf4j.config.CustomRepresenter;
-import io.github.toilal.nsf4j.config.Share;
+import io.github.toilal.nsf4j.config.ShareConfig;
 import org.yaml.snakeyaml.Yaml;
 import picocli.CommandLine;
+import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
-import picocli.CommandLine.Command;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.Callable;
-
 
 /**
  * Main entrypoint for nfs4j daemon.
@@ -40,6 +39,18 @@ public class Main implements Callable<Void> {
 
     @Option(names = {"-p", "--port"}, description = "Port to use")
     private Integer port;
+
+    @Option(names = {"--api"}, description = "Enable HTTP API")
+    private Boolean api;
+
+    @Option(names = {"--api-port"}, description = "Port to use for API")
+    private Integer apiPort;
+
+    @Option(names = {"--api-ip"}, description = "Ip to use for API")
+    private String apiIp;
+
+    @Option(names = {"--api-bearer"}, description = "Bearer to use for API authentication")
+    private String apiBearer;
 
     @Option(names = {"--udp"}, description = "Use UDP instead of TCP")
     private Boolean udp;
@@ -104,11 +115,29 @@ public class Main implements Callable<Void> {
             config.getPermissions().setMask(mask);
         }
 
+        if (this.api || this.apiPort != null || this.apiIp != null || this.apiBearer != null) {
+            ApiConfig apiConfig = new ApiConfig();
+
+            if (this.apiPort != null) {
+                apiConfig.setPort(this.apiPort);
+            }
+
+            if (this.apiIp != null) {
+                apiConfig.setIp(this.apiIp);
+            }
+
+            if (this.apiBearer != null) {
+                apiConfig.setBearer(this.apiBearer);
+            }
+
+            config.setApi(apiConfig);
+        }
+
         if (this.shares != null) {
-            List<Share> configShares = config.getShares();
+            List<ShareConfig> configShares = config.getShares();
             configShares.clear();
             for (String share : this.shares) {
-                configShares.add(Share.fromString(share));
+                configShares.add(ShareConfig.fromString(share));
             }
         }
 
@@ -116,7 +145,7 @@ public class Main implements Callable<Void> {
             throw new IllegalArgumentException("At least one share should be defined.");
         }
 
-        for (Share share : config.getShares()) {
+        for (ShareConfig share : config.getShares()) {
             if (share.getAlias() == null) {
                 if (config.getShares().size() > 1) {
                     String defaultAlias = share.getPath().toAbsolutePath().normalize().toString().replace(":", "").replace(File.separator, "/");

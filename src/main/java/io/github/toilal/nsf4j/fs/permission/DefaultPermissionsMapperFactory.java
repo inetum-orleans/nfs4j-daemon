@@ -1,10 +1,10 @@
 package io.github.toilal.nsf4j.fs.permission;
 
-import io.github.toilal.nsf4j.config.Permissions;
+import io.github.toilal.nsf4j.config.PermissionsConfig;
 
 public class DefaultPermissionsMapperFactory implements PermissionsMapperFactory {
     @Override
-    public PermissionsMapper newPermissionsMapper(Permissions permissions) {
+    public PermissionsMapper newPermissionsMapper(PermissionsConfig permissions) {
         switch (permissions.getType()) {
             case SIMPLE:
                 if (System.getProperty("os.name").toLowerCase().startsWith("win")) {

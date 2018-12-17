@@ -6,30 +6,30 @@ import java.nio.file.Paths;
 /**
  * Configuration of a share.
  */
-public class Share {
+public class ShareConfig {
     private Path path;
     private String alias;
-    private Permissions permissions;
+    private PermissionsConfig permissions;
 
-    public Share() {
+    public ShareConfig() {
     }
 
-    public Share(Path path) {
+    public ShareConfig(Path path) {
         this.path = path;
         this.alias = alias;
     }
 
-    public Share(Path path, String alias) {
+    public ShareConfig(Path path, String alias) {
         this.path = path;
         this.alias = alias;
     }
 
-    public static Share fromString(String share) {
+    public static ShareConfig fromString(String share) {
         int lastIndex = share.lastIndexOf(':');
         if (lastIndex > 1) {
-            return new Share(Paths.get(share.substring(0, lastIndex)), share.substring(lastIndex + 1));
+            return new ShareConfig(Paths.get(share.substring(0, lastIndex)), share.substring(lastIndex + 1));
         } else {
-            return new Share(Paths.get(share));
+            return new ShareConfig(Paths.get(share));
         }
     }
 
@@ -49,11 +49,11 @@ public class Share {
         this.alias = alias;
     }
 
-    public Permissions getPermissions() {
+    public PermissionsConfig getPermissions() {
         return permissions;
     }
 
-    public void setPermissions(Permissions permissions) {
+    public void setPermissions(PermissionsConfig permissions) {
         this.permissions = permissions;
     }
 }

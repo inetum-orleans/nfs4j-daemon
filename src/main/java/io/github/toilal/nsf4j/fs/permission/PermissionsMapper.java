@@ -11,7 +11,7 @@ public interface PermissionsMapper<A extends BasicFileAttributes> {
     /**
      * Read permissions from {@link Path} and associated {@link BasicFileAttributes} to {@link Stat} object.
      * <p>
-     * Permissions set to {@link Stat} instance will be applied to the NFS mounted directory.
+     * PermissionsConfig set to {@link Stat} instance will be applied to the NFS mounted directory.
      *
      * @param path
      * @param attrs
@@ -22,7 +22,7 @@ public interface PermissionsMapper<A extends BasicFileAttributes> {
     /**
      * Write permissions from {@link javax.security.auth.Subject} owner and mode to {@link Path}.
      * <p>
-     * Permissions set to {@link Path} instance will be applied on the local shared directory.
+     * PermissionsConfig set to {@link Path} instance will be applied on the local shared directory.
      *
      * @param path
      * @param subject
