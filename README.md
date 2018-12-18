@@ -13,7 +13,7 @@ This project has been designed as an alternative to [winnfsd](https://github.com
 
 ## Quickstart
 
-- Download latest binaries from [Github Releases](https://github.com/Toilal/nfs4j-daemon/releases).
+- Download latest binaries from [Github Releases](https://github.com/gfi-centre-ouest/nfs4j-daemon/releases).
 
 - Run `nfs4j-daemon`. With default options, it will publish the current working directory through NFS.
 
