@@ -40,7 +40,7 @@
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <outputDirectory>dist/jar</outputDirectory>
+                            <outputDirectory>dist</outputDirectory>
                             <archive>
                                 <manifest>
                                     <mainClass>world.gfi.nfs4j.Main</mainClass>
@@ -51,24 +51,16 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>createDistDirs</id>
-                        <phase>process-resources</phase>
-                        <configuration>
-                            <tasks>
-                                <mkdir dir="dist/jar"/>
-                                <mkdir dir="dist/win64"/>
-                            </tasks>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                  <filesets>
+                    <fileset>
+                      <directory>dist</directory>
+                    </fileset>
+                  </filesets>
+                </configuration>
+              </plugin>
             <plugin>
                 <groupId>com.akathist.maven.plugins.launch4j</groupId>
                 <artifactId>launch4j-maven-plugin</artifactId>
@@ -83,8 +75,8 @@
                         <configuration>
                             <dontWrapJar>false</dontWrapJar>
                             <headerType>console</headerType>
-                            <jar>dist/jar/${project.build.finalName}.jar</jar>
-                            <outfile>dist/win64/${project.build.finalName}.exe</outfile>
+                            <jar>dist/${project.build.finalName}.jar</jar>
+                            <outfile>dist/${project.build.finalName}.exe</outfile>
                             <chdir>.</chdir>
                             <priority>normal</priority>
                             <downloadUrl>http://java.com/download</downloadUrl>
@@ -95,15 +87,9 @@
                                 <addDependencies>true</addDependencies>
                             </classPath>
                             <jre>
-                                <path>${env.JAVA_HOME}</path>
-                                <bundledJre64Bit>true</bundledJre64Bit>
-                                <bundledJreAsFallback>false</bundledJreAsFallback>
-                                <minVersion>8</minVersion>
-                                <maxVersion></maxVersion>
-                                <jdkPreference>jdkOnly</jdkPreference>
-                                <runtimeBits>64</runtimeBits>
-                                <initialHeapSize>64</initialHeapSize>
-                                <maxHeapSize>256</maxHeapSize>
+                                <path>%JAVA_HOME%</path>
+                                <bundledJreAsFallback>true</bundledJreAsFallback>
+                                <minVersion>1.8</minVersion>
                             </jre>
                         </configuration>
                     </execution>
