@@ -11,6 +11,7 @@ public class ShareConfig {
     private Path path;
     private String alias;
     private boolean appendDefaultAlias;
+    private boolean localMetadata;
     private PermissionsConfig permissions;
 
     public ShareConfig() {
@@ -57,6 +58,14 @@ public class ShareConfig {
 
     public void setAppendDefaultAlias(boolean appendDefaultAlias) {
         this.appendDefaultAlias = appendDefaultAlias;
+    }
+
+    public boolean isLocalMetadata() {
+        return localMetadata;
+    }
+
+    public void setLocalMetadata(boolean localMetadata) {
+        this.localMetadata = localMetadata;
     }
 
     public PermissionsConfig getPermissions() {

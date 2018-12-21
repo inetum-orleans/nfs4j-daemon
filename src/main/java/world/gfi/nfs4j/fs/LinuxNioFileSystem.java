@@ -1,12 +1,11 @@
 package world.gfi.nfs4j.fs;
 
-import world.gfi.nfs4j.fs.handle.UniqueHandleGenerator;
-import world.gfi.nfs4j.fs.permission.PermissionsMapper;
 import org.dcache.nfs.vfs.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import world.gfi.nfs4j.fs.handle.UniqueHandleGenerator;
+import world.gfi.nfs4j.fs.permission.PermissionsMapper;
 
-import javax.security.auth.Subject;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -40,13 +39,6 @@ public class LinuxNioFileSystem extends AbstractNioFileSystem<PosixFileAttribute
     protected void applyFileAttributesToStat(Stat stat, Path path, PosixFileAttributes attrs) throws IOException {
         super.applyFileAttributesToStat(stat, path, attrs);
         stat.setNlink((Integer) Files.getAttribute(path, "unix:nlink", NOFOLLOW_LINKS));
-
-        this.permissionsMapper.readPermissions(path, attrs, stat);
-    }
-
-    @Override
-    protected void applyOwnershipAndModeToPath(Path path, Subject subject, int mode) throws IOException {
-        this.permissionsMapper.writePermissions(path, subject, mode);
     }
 
     @Override

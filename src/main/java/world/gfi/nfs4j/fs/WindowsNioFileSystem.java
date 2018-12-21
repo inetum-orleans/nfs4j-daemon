@@ -1,12 +1,11 @@
 package world.gfi.nfs4j.fs;
 
-import world.gfi.nfs4j.fs.handle.UniqueHandleGenerator;
-import world.gfi.nfs4j.fs.permission.PermissionsMapper;
 import org.dcache.nfs.vfs.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import world.gfi.nfs4j.fs.handle.UniqueHandleGenerator;
+import world.gfi.nfs4j.fs.permission.PermissionsMapper;
 
-import javax.security.auth.Subject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,12 +33,5 @@ public class WindowsNioFileSystem extends AbstractNioFileSystem<DosFileAttribute
     protected void applyFileAttributesToStat(Stat stat, Path path, DosFileAttributes attrs) throws IOException {
         super.applyFileAttributesToStat(stat, path, attrs);
         stat.setNlink(1);
-
-        this.permissionsMapper.readPermissions(path, attrs, stat);
-    }
-
-    @Override
-    protected void applyOwnershipAndModeToPath(Path target, Subject subject, int mode) throws IOException {
-        this.permissionsMapper.writePermissions(target, subject, mode);
     }
 }

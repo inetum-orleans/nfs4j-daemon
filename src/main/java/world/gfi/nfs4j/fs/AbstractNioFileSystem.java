@@ -69,9 +69,15 @@ public abstract class AbstractNioFileSystem<A extends BasicFileAttributes> imple
         this.handleRegistry = new PathHandleRegistry(handleGenerator);
         this.rootFileHandle = handleRegistry.add(this.root);
         this.fileSystemReaderWriter = new FileSystemReaderWriter(handleRegistry);
+        this.handleRegistry.setListener(this.permissionsMapper.getHandleRegistryListener());
     }
 
-    abstract protected void applyOwnershipAndModeToPath(Path target, Subject subject, int mode) throws IOException;
+    @Override
+    public void close() throws IOException {
+        if (this.permissionsMapper.getClosable() != null) {
+            this.permissionsMapper.getClosable().close();
+        }
+    }
 
     abstract protected A getFileAttributes(Path path) throws IOException;
 
@@ -121,6 +127,8 @@ public abstract class AbstractNioFileSystem<A extends BasicFileAttributes> imple
         }
 
         attributeView.setTimes(lastModifiedTime, lastAccessTime, createTime);
+
+        this.permissionsMapper.writePermissions(path, stat);
     }
 
     protected void applyFileAttributesToStat(Stat stat, Path path, A attrs) throws IOException {
@@ -157,7 +165,7 @@ public abstract class AbstractNioFileSystem<A extends BasicFileAttributes> imple
             throw new ExistException("path " + newPath);
         }
 
-        applyOwnershipAndModeToPath(newPath, subject, mode);
+        this.permissionsMapper.writePermissions(newPath, subject, mode);
         return toInode(handleRegistry.toFileHandle(newPath));
     }
 
@@ -269,7 +277,7 @@ public abstract class AbstractNioFileSystem<A extends BasicFileAttributes> imple
             throw new ExistException("path " + newPath);
         }
 
-        applyOwnershipAndModeToPath(newPath, subject, mode);
+        this.permissionsMapper.writePermissions(newPath, subject, mode);
         return toInode(handleRegistry.toFileHandle(newPath));
     }
 
@@ -349,7 +357,7 @@ public abstract class AbstractNioFileSystem<A extends BasicFileAttributes> imple
             throw new ServerFaultException("Failed to create: " + e.getMessage(), e);
         }
 
-        applyOwnershipAndModeToPath(link, subject, mode);
+        this.permissionsMapper.writePermissions(link, subject, mode);
         return toInode(handleRegistry.toFileHandle(link));
     }
 
@@ -373,6 +381,7 @@ public abstract class AbstractNioFileSystem<A extends BasicFileAttributes> imple
             A attrs = getFileAttributes(p);
             Stat stat = new Stat();
             applyFileAttributesToStat(stat, p, attrs);
+            this.permissionsMapper.readPermissions(p, attrs, stat);
             return stat;
         } catch (NoSuchFileException e) {
             throw new NoEntException(p.toString());

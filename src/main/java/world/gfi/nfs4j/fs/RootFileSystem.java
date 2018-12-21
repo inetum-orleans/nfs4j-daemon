@@ -11,13 +11,16 @@ import org.dcache.nfs.vfs.FsStat;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.nfs.vfs.Stat;
 import org.dcache.nfs.vfs.VirtualFileSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import world.gfi.nfs4j.config.PermissionsConfig;
 import world.gfi.nfs4j.exceptions.AliasAlreadyExistsException;
-import world.gfi.nfs4j.exceptions.NoSuchAliasException;
-import world.gfi.nfs4j.exceptions.AttachException;
 import world.gfi.nfs4j.exceptions.AlreadyAttachedException;
+import world.gfi.nfs4j.exceptions.AttachException;
+import world.gfi.nfs4j.exceptions.NoSuchAliasException;
 import world.gfi.nfs4j.fs.handle.UniqueHandleGenerator;
-import world.gfi.nfs4j.fs.permission.SimpleLinuxPermissionsMapper;
+import world.gfi.nfs4j.fs.permission.LinuxPermissionsSimpleReader;
+import world.gfi.nfs4j.fs.permission.SimplePermissionsMapperRead;
 
 import javax.security.auth.Subject;
 import java.io.IOError;
@@ -34,6 +37,8 @@ import java.util.Map;
  * A memory implementation of {@link VirtualFileSystem} that supports attaching others file systems {@link AttachableFileSystem} on given aliases.
  */
 public class RootFileSystem implements VirtualFileSystem {
+    private Logger LOG = LoggerFactory.getLogger(RootFileSystem.class);
+
     private final LinuxNioFileSystem mainFs;
     private Map<String, AttachableFileSystem> fileSystems = new LinkedHashMap<>();
 
@@ -47,7 +52,7 @@ public class RootFileSystem implements VirtualFileSystem {
     }
 
     public RootFileSystem(PermissionsConfig permissions, UniqueHandleGenerator uniqueLongGenerator) {
-        mainFs = new LinuxNioFileSystem(buildRootPath(), new SimpleLinuxPermissionsMapper(permissions), uniqueLongGenerator);
+        mainFs = new LinuxNioFileSystem(buildRootPath(), new SimplePermissionsMapperRead(new LinuxPermissionsSimpleReader(permissions)), uniqueLongGenerator);
     }
 
     public AttachableFileSystem attachFileSystem(AttachableFileSystem fs, String path, String... morePath) throws AttachException {
@@ -77,6 +82,11 @@ public class RootFileSystem implements VirtualFileSystem {
         AttachableFileSystem removedFileSystem = fileSystems.remove(aliasPath.toString());
         if (removedFileSystem == null) {
             throw new NoSuchAliasException("No FileSystem found for alias " + aliasPath.toString());
+        }
+        try {
+            removedFileSystem.close();
+        } catch (IOException e) {
+            LOG.error("An error has occured while releasing resources associated to removed FileSystem", e);
         }
         return removedFileSystem;
     }

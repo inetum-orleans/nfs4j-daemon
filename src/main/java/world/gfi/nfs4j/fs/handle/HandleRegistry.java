@@ -22,6 +22,11 @@ public abstract class HandleRegistry<P> {
     private final NonBlockingHashMapLong<P> fileHandleToPath = new NonBlockingHashMapLong<>();
     private final NonBlockingHashMap<P, Long> pathToFileHandle = new NonBlockingHashMap<>();
     private final UniqueHandleGenerator uniqueLongGenerator;
+    private HandleRegistryListener<P> listener;
+
+    public void setListener(HandleRegistryListener<P> listener) {
+        this.listener = listener;
+    }
 
     public HandleRegistry(UniqueHandleGenerator uniqueLongGenerator) {
         this.uniqueLongGenerator = uniqueLongGenerator;
@@ -101,6 +106,10 @@ public abstract class HandleRegistry<P> {
             throw new IllegalStateException("Can't add FileHandle " + fileHandle + " with Path " + path + ". FileHandle " + fileHandle + " is already registered with Path " + existingPath);
         }
 
+        if (this.listener != null) {
+            this.listener.added(path, fileHandle);
+        }
+
         return fileHandle;
     }
 
@@ -120,6 +129,10 @@ public abstract class HandleRegistry<P> {
             return false;
         }
 
+        if (this.listener != null) {
+            this.listener.replaced(oldPath, newPath);
+        }
+
         return true;
     }
 
@@ -133,6 +146,10 @@ public abstract class HandleRegistry<P> {
         if (!path.equals(removedPath)) {
             pathToFileHandle.put(path, fileHandle);
             throw new IllegalStateException("Can't remove Path " + path + ". Removed Path " + removedPath + " doesn't match expected path " + path + ".");
+        }
+
+        if (this.listener != null) {
+            this.listener.removed(path, (long) fileHandle);
         }
 
         return fileHandle;

@@ -3,11 +3,11 @@ package world.gfi.nfs4j.config;
 import world.gfi.nfs4j.fs.permission.PermissionsMapperType;
 
 public class PermissionsConfig {
-    PermissionsMapperType type = PermissionsMapperType.SIMPLE;
+    PermissionsMapperType type = PermissionsMapperType.ADVANCED;
 
     int uid = 0;
     int gid = 0;
-    int mask = 0755;
+    int mask = type == PermissionsMapperType.SIMPLE ? 0775 : 0664;
 
     public PermissionsMapperType getType() {
         return type;

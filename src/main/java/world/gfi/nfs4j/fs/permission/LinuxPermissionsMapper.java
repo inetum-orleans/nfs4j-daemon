@@ -1,7 +1,6 @@
 package world.gfi.nfs4j.fs.permission;
 
-import org.dcache.auth.GidPrincipal;
-import org.dcache.auth.UidPrincipal;
+import org.dcache.auth.Subjects;
 import org.dcache.nfs.vfs.Stat;
 
 import javax.security.auth.Subject;
@@ -9,7 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.security.Principal;
 
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 
@@ -23,20 +21,26 @@ public class LinuxPermissionsMapper implements PermissionsMapper {
 
     @Override
     public void writePermissions(Path path, Subject subject, int mode) throws IOException {
-        Integer uid = null;
-        Integer gid = null;
+        long uid = Subjects.getUid(subject);
+        long gid = Subjects.getPrimaryGid(subject);
 
-        for (Principal principal : subject.getPrincipals()) {
-            if (principal instanceof UidPrincipal) {
-                uid = (int) ((UidPrincipal) principal).getUid();
-            }
-            if (principal instanceof GidPrincipal) {
-                gid = (int) ((GidPrincipal) principal).getGid();
-            }
+        Files.setAttribute(path, "unix:uid", (int) uid, NOFOLLOW_LINKS);
+        Files.setAttribute(path, "unix:gid", (int) gid, NOFOLLOW_LINKS);
+        Files.setAttribute(path, "unix:mode", mode, NOFOLLOW_LINKS);
+    }
+
+    @Override
+    public void writePermissions(Path path, Stat stat) throws IOException {
+        if (stat.isDefined(Stat.StatAttribute.OWNER)) {
+            Files.setAttribute(path, "unix:uid", stat.getUid(), NOFOLLOW_LINKS);
         }
 
-        Files.setAttribute(path, "unix:uid", uid, NOFOLLOW_LINKS);
-        Files.setAttribute(path, "unix:gid", gid, NOFOLLOW_LINKS);
-        Files.setAttribute(path, "unix:mode", mode, NOFOLLOW_LINKS);
+        if (stat.isDefined(Stat.StatAttribute.GROUP)) {
+            Files.setAttribute(path, "unix:gid", stat.getGid(), NOFOLLOW_LINKS);
+        }
+
+        if (stat.isDefined(Stat.StatAttribute.MODE)) {
+            Files.setAttribute(path, "unix:mode", stat.getMode(), NOFOLLOW_LINKS);
+        }
     }
 }

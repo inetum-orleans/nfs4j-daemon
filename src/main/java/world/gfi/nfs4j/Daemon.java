@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import world.gfi.nfs4j.api.Api;
 import world.gfi.nfs4j.api.JsonTransformer;
 import world.gfi.nfs4j.config.Config;
+import world.gfi.nfs4j.config.PermissionsConfig;
 import world.gfi.nfs4j.config.ShareConfig;
 import world.gfi.nfs4j.exceptions.AttachException;
 import world.gfi.nfs4j.fs.AttachableFileSystem;
@@ -48,7 +49,6 @@ public class Daemon implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(Daemon.class);
 
     private final OncRpcSvc nfsSvc;
-    private final PermissionsMapper defaultPermissionsMapper;
     private final DefaultPermissionsMapperFactory permissionsMapperFactory;
     private final DefaultFileSystemFactory fsFactory;
     private final UniqueAtomicLongGenerator uniqueHandleGenerator;
@@ -97,7 +97,6 @@ public class Daemon implements Closeable {
         permissionsMapperFactory = new DefaultPermissionsMapperFactory();
 
         vfs = new RootFileSystem(config.getPermissions(), uniqueHandleGenerator);
-        defaultPermissionsMapper = permissionsMapperFactory.newPermissionsMapper(config.getPermissions());
         for (ShareConfig share : config.getShares()) {
             attach(share);
         }
@@ -125,17 +124,23 @@ public class Daemon implements Closeable {
     }
 
     public AttachableFileSystem attach(ShareConfig share) throws AttachException {
-        PermissionsMapper permissionsMapper = defaultPermissionsMapper;
-        if (share.getPermissions() != null) {
-            permissionsMapper = permissionsMapperFactory.newPermissionsMapper(share.getPermissions());
-        }
-        AttachableFileSystem shareVfs = fsFactory.newFileSystem(share.getPath(), permissionsMapper, uniqueHandleGenerator);
         String alias = share.getAlias();
         if (alias == null) {
             alias = share.buildDefaultAlias();
         } else if (share.isAppendDefaultAlias()) {
             alias = alias + share.buildDefaultAlias();
         }
+
+        PermissionsConfig permissions = share.getPermissions() == null ? this.config.getPermissions() : share.getPermissions();
+        PermissionsMapper permissionsMapper = null;
+
+        try {
+            permissionsMapper = permissionsMapperFactory.newPermissionsMapper(permissions, share, alias);
+        } catch (IOException e) {
+            throw new AttachException("Can't create permissions mapper", e);
+        }
+
+        AttachableFileSystem shareVfs = fsFactory.newFileSystem(share.getPath(), permissionsMapper, uniqueHandleGenerator);
         vfs.attachFileSystem(shareVfs, alias);
         share.setPath(shareVfs.getRoot());
         share.setAlias(shareVfs.getAlias());
