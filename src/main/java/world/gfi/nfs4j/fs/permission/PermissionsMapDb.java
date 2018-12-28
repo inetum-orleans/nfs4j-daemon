@@ -24,6 +24,7 @@ public class PermissionsMapDb<A extends BasicFileAttributes> implements Permissi
     private final ConcurrentMap<String, Integer> gidMap;
     private final PermissionsReader<A> defaultPermissions;
     private final FileIdReader<A> idReader;
+    private final ShareConfig share;
 
     public static String getFilename(String alias) {
         if (alias == null) {
@@ -45,12 +46,13 @@ public class PermissionsMapDb<A extends BasicFileAttributes> implements Permissi
     }
 
     public PermissionsMapDb(ShareConfig share, String alias, PermissionsReader<A> defaultPermissions, FileIdReader<A> idReader) throws IOException {
+        this.share = share;
         this.defaultPermissions = defaultPermissions;
         this.idReader = idReader;
 
         File dbFile;
-        if (share.isLocalMetadata()) {
-            String basePath = share.getPath().toString();
+        if (this.share.isLocalMetadata()) {
+            String basePath = this.share.getPath().toString();
             Path directory = Paths.get(basePath, ".nfs4j").normalize();
             Files.createDirectories(directory);
             dbFile = Paths.get(directory.toString(), getFilename(alias)).normalize().toFile();
@@ -70,6 +72,15 @@ public class PermissionsMapDb<A extends BasicFileAttributes> implements Permissi
         this.maskMap = db.hashMap("mask", Serializer.STRING, Serializer.INTEGER).createOrOpen();
         this.uidMap = db.hashMap("uid", Serializer.STRING, Serializer.INTEGER).createOrOpen();
         this.gidMap = db.hashMap("gid", Serializer.STRING, Serializer.INTEGER).createOrOpen();
+
+        this.cleanup();
+    }
+
+    public void cleanup() {
+        this.id.keySet().removeIf(p -> !new File(p).exists());
+        this.maskMap.keySet().removeIf(p -> !new File(p).exists());
+        this.uidMap.keySet().removeIf(p -> !new File(p).exists());
+        this.gidMap.keySet().removeIf(p -> !new File(p).exists());
     }
 
 

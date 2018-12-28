@@ -16,7 +16,11 @@ public class WindowsFileIdReader<A extends BasicFileAttributes> extends DefaultF
         try {
             return JnaWindowsUtils.getFileId(path);
         } catch (LastErrorException e) {
-            LOG.warn("Can't read File id with JNA. Falling back to creation time.", e);
+            if (e.getErrorCode() == 5 || e.getErrorCode() == 32) {
+                LOG.debug("Can't read File id with JNA on " + path.normalize().toString() + ". Falling back to creation time. (Error Code: " + e.getErrorCode() + ")");
+            } else {
+                LOG.warn("Can't read File id with JNA on " + path.normalize().toString() + ". Falling back to creation time. (Error Code: " + e.getErrorCode() + ")");
+            }
             return super.getFileId(path, attrs);
         }
     }

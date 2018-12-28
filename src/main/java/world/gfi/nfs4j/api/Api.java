@@ -1,7 +1,8 @@
 package world.gfi.nfs4j.api;
 
-import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import world.gfi.nfs4j.Daemon;
 import world.gfi.nfs4j.config.ApiConfig;
 import world.gfi.nfs4j.config.ShareConfig;
@@ -22,6 +23,8 @@ import static spark.Spark.post;
 public class Api {
     private final Daemon daemon;
     private final ApiConfig config;
+
+    private static final Logger logger = LoggerFactory.getLogger(Api.class);
 
     public Api(ApiConfig config, Daemon daemon) {
         this.config = config;
@@ -48,10 +51,11 @@ public class Api {
                 }
             });
         }
-        
+
         exception(Exception.class, (exception, req, res) -> {
             res.status(500);
             res.type("application/json");
+            logger.error(exception.getMessage(), exception);
             Error error = new Error(exception.getMessage());
             res.body(new JsonTransformer().render(error));
         });
