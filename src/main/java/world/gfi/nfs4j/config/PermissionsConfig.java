@@ -1,5 +1,6 @@
 package world.gfi.nfs4j.config;
 
+import org.apache.commons.lang3.SystemUtils;
 import world.gfi.nfs4j.fs.permission.PermissionsMapperType;
 
 public class PermissionsConfig {
@@ -10,6 +11,16 @@ public class PermissionsConfig {
     Integer mask = null;
 
     public PermissionsMapperType getType() {
+        if (type == null) {
+            if (SystemUtils.IS_OS_WINDOWS) {
+                return PermissionsMapperType.ADVANCED;
+            }
+            if (SystemUtils.IS_OS_LINUX) {
+                return PermissionsMapperType.LINUX;
+            }
+
+            return PermissionsMapperType.SIMPLE;
+        }
         return type;
     }
 
