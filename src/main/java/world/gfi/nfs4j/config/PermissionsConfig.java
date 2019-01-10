@@ -7,7 +7,7 @@ public class PermissionsConfig {
 
     int uid = 0;
     int gid = 0;
-    int mask = type == PermissionsMapperType.SIMPLE ? 0775 : 0664;
+    Integer mask = null;
 
     public PermissionsMapperType getType() {
         return type;
@@ -34,10 +34,13 @@ public class PermissionsConfig {
     }
 
     public int getMask() {
+        if (mask == null) {
+            return type == PermissionsMapperType.SIMPLE ? 0775 : 0664;
+        }
         return mask;
     }
 
-    public void setMask(int mask) {
+    public void setMask(Integer mask) {
         this.mask = mask;
     }
 
