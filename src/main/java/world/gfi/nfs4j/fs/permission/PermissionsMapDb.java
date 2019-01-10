@@ -66,6 +66,10 @@ public class PermissionsMapDb<A extends BasicFileAttributes> implements Permissi
         this.db = DBMaker.fileDB(dbFile)
                 .checksumHeaderBypass()
                 .closeOnJvmShutdown()
+                .fileMmapEnable()
+                .fileMmapEnableIfSupported()
+                .fileMmapPreclearDisable()
+                .cleanerHackEnable()
                 .make();
 
         this.id = db.hashMap("creationTime", Serializer.STRING, Serializer.LONG).createOrOpen();
