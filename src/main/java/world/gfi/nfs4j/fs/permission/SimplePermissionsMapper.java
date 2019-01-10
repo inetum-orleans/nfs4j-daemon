@@ -23,25 +23,16 @@ public class SimplePermissionsMapper<A extends BasicFileAttributes> extends Simp
         long uid = Subjects.getUid(subject);
         long gid = Subjects.getPrimaryGid(subject);
 
-        this.writer.setUid(path, (int) uid);
-        this.writer.setGid(path, (int) gid);
-
-        this.writer.setMask(path, mode & 0000777);
+        this.writer.setPermissions(path, (int) uid, (int) gid, mode & 0000777);
     }
 
     @Override
     public void writePermissions(Path path, Stat stat) throws IOException {
-        if (stat.isDefined(Stat.StatAttribute.OWNER)) {
-            this.writer.setUid(path, stat.getUid());
-        }
+        Integer uid = stat.isDefined(Stat.StatAttribute.OWNER) ? stat.getUid() : null;
+        Integer gid = stat.isDefined(Stat.StatAttribute.GROUP) ? stat.getGid() : null;
+        Integer mask = stat.isDefined(Stat.StatAttribute.MODE) ? (stat.getMode() & 0000777) : null;
 
-        if (stat.isDefined(Stat.StatAttribute.GROUP)) {
-            this.writer.setGid(path, stat.getGid());
-        }
-
-        if (stat.isDefined(Stat.StatAttribute.MODE)) {
-            this.writer.setMask(path, stat.getMode() & 0000777);
-        }
+        this.writer.setPermissions(path, uid, gid, mask);
     }
 
     @Override

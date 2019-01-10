@@ -37,6 +37,7 @@ public interface PermissionsReader<A extends BasicFileAttributes> {
      *
      * @param path
      * @param attrs
+     * @return uid, gid and mask
      * @throws IOException
      */
     default int[] getPermissions(Path path, A attrs) throws IOException {

@@ -72,7 +72,7 @@ public class PermissionsMapDb<A extends BasicFileAttributes> implements Permissi
                 .cleanerHackEnable()
                 .make();
 
-        this.id = db.hashMap("creationTime", Serializer.STRING, Serializer.LONG).createOrOpen();
+        this.id = db.hashMap("id", Serializer.STRING, Serializer.LONG).createOrOpen();
         this.maskMap = db.hashMap("mask", Serializer.STRING, Serializer.INTEGER).createOrOpen();
         this.uidMap = db.hashMap("uid", Serializer.STRING, Serializer.INTEGER).createOrOpen();
         this.gidMap = db.hashMap("gid", Serializer.STRING, Serializer.INTEGER).createOrOpen();
@@ -102,7 +102,7 @@ public class PermissionsMapDb<A extends BasicFileAttributes> implements Permissi
      * @see
      */
     protected void checkFileId(Path path, A attrs) {
-        long fileId = this.idReader.getFileId(path, attrs);
+        long fileId = attrs.creationTime().toMillis();
 
         String key = path.normalize().toString();
 
