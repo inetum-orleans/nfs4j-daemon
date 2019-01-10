@@ -2,14 +2,14 @@
 
 Pure Java NFS v3/v4.1 server backed by [dCache nfs4j](https://github.com/dCache/nfs4j).
 
-This project has been designed as an alternative to [winnfsd](https://github.com/winnfsd/winnfsd).
+This project has been designed as an alternative to [winnfsd](https://github.com/winnfsd/winnfsd). Vagrant plugin is 
+available at [gfi-centre-ouest/vagrant-nfs4j](https://github.com/gfi-centre-ouest/vagrant-nfs4j).
 
 *NFS v3 is available, but not untested and unsupported. You should use NFS v4.1 only for now.*
 
 ## TODO:
 
 - MacOS support.
-- Vagrant plugin.
 
 ## Quickstart
 
