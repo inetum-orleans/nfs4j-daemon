@@ -45,19 +45,26 @@ java -jar nfs4j-daemon.jar --help
 ```
 
 ```bash
-Usage: <main class> [-h] [--portmap-disabled] [--udp] [-c=<config>]
-                    [-e=<exports>] [-g=<gid>] [-m=<mask>] [-p=<port>]
-                    [-u=<uid>] [<shares>...]
-      [<shares>...]         Directories to share
-  -c, --config=<config>     Path to configuration file
-  -u, --uid=<uid>           Default user id to use for exported files
-  -g, --gid=<gid>           Default group id to use for exported files
-  -m, --mask=<mask>         Default mask to use for exported files
-  -p, --port=<port>         Port to use
-      --udp                 Use UDP instead of TCP
-      --portmap-disabled    Disable embedded portmap service
-  -e, --exports=<exports>   Path to exports file (nsf4j advanced configuration)
-  -h, --help                Display this help message
+Usage: <main class> [-h] [--api] [--no-share] [--portmap-disabled] [--udp]
+                    [--api-bearer=<apiBearer>] [--api-ip=<apiIp>]
+                    [--api-port=<apiPort>] [-c=<config>] [-e=<exports>]
+                    [-g=<gid>] [-m=<mask>] [-p=<port>] [-u=<uid>] [<shares>...]
+      [<shares>...]          Directories to share
+  -c, --config=<config>      Path to configuration file
+  -u, --uid=<uid>            Default user id to use for exported files
+  -g, --gid=<gid>            Default group id to use for exported files
+  -m, --mask=<mask>          Default mask to use for exported files
+  -p, --port=<port>          Port to use
+      --api                  Enable HTTP API
+      --api-port=<apiPort>   Port to use for API
+      --api-ip=<apiIp>       Ip to use for API
+      --api-bearer=<apiBearer>
+                             Bearer to use for API authentication
+      --no-share             Disable default share and configured shares
+      --udp                  Use UDP instead of TCP
+      --portmap-disabled     Disable embedded portmap service
+  -e, --exports=<exports>    Path to exports file (nsf4j advanced configuration)
+  -h, --help                 Display this help message
 ```
 
 ### Configuration File
