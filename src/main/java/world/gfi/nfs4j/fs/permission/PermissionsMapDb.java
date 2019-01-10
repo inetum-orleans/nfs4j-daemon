@@ -113,19 +113,37 @@ public class PermissionsMapDb<A extends BasicFileAttributes> implements Permissi
     @Override
     public int getMask(Path path, A attrs) throws IOException {
         this.checkFileId(path, attrs);
+        return getMaskImpl(path, attrs);
+    }
+
+    private int getMaskImpl(Path path, A attrs) throws IOException {
         return this.maskMap.getOrDefault(path.normalize().toString(), this.defaultPermissions.getMask(path, attrs));
     }
 
     @Override
     public int getUid(Path path, A attrs) throws IOException {
         this.checkFileId(path, attrs);
+        return this.getUidImpl(path, attrs);
+    }
+
+    private int getUidImpl(Path path, A attrs) throws IOException {
         return this.uidMap.getOrDefault(path.normalize().toString(), this.defaultPermissions.getUid(path, attrs));
     }
 
     @Override
     public int getGid(Path path, A attrs) throws IOException {
         this.checkFileId(path, attrs);
+        return this.getGidImpl(path, attrs);
+    }
+
+    private int getGidImpl(Path path, A attrs) throws IOException {
         return this.gidMap.getOrDefault(path.normalize().toString(), this.defaultPermissions.getGid(path, attrs));
+    }
+
+    @Override
+    public int[] getPermissions(Path path, A attrs) throws IOException {
+        this.checkFileId(path, attrs);
+        return new int[]{getUidImpl(path, attrs), getGidImpl(path, attrs), getMaskImpl(path, attrs)};
     }
 
     @Override

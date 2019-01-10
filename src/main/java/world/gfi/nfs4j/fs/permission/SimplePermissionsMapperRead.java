@@ -16,12 +16,12 @@ public class SimplePermissionsMapperRead<A extends BasicFileAttributes> implemen
 
     @Override
     public void readPermissions(Path path, A attrs, Stat stat) throws IOException {
-        stat.setGid(this.reader.getGid(path, attrs));
-        stat.setUid(this.reader.getUid(path, attrs));
+        int[] permissions = this.reader.getPermissions(path, attrs);
+        stat.setUid(permissions[0]);
+        stat.setGid(permissions[1]);
 
         int type = attrs.isSymbolicLink() ? Stat.S_IFLNK : attrs.isDirectory() ? Stat.S_IFDIR : Stat.S_IFREG;
-        int mask = this.reader.getMask(path, attrs);
-        stat.setMode(type | mask);
+        stat.setMode(type | permissions[2]);
     }
 
     @Override
