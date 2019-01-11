@@ -1,6 +1,7 @@
 package world.gfi.nfs4j.fs.permission;
 
 import org.dcache.nfs.vfs.Stat;
+import world.gfi.nfs4j.config.PermissionsConfig;
 import world.gfi.nfs4j.fs.handle.PathHandleRegistryListener;
 
 import javax.security.auth.Subject;
@@ -57,7 +58,7 @@ public interface PermissionsMapper<A extends BasicFileAttributes> {
      *
      * @return
      */
-    default Closeable getClosable() {
+    default Closeable getCloseable() {
         return null;
     }
 }

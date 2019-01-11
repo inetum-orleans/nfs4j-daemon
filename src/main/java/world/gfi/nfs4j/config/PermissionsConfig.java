@@ -4,10 +4,9 @@ import org.apache.commons.lang3.SystemUtils;
 import world.gfi.nfs4j.fs.permission.PermissionsMapperType;
 
 public class PermissionsConfig {
-    PermissionsMapperType type = PermissionsMapperType.ADVANCED;
-
-    int uid = 0;
-    int gid = 0;
+    PermissionsMapperType type = null;
+    Integer uid = null;
+    Integer gid = null;
     Integer mask = null;
 
     public PermissionsMapperType getType() {
@@ -29,6 +28,9 @@ public class PermissionsConfig {
     }
 
     public int getUid() {
+        if (uid == null) {
+            return 0;
+        }
         return uid;
     }
 
@@ -37,6 +39,9 @@ public class PermissionsConfig {
     }
 
     public int getGid() {
+        if (gid == null) {
+            return 0;
+        }
         return gid;
     }
 
@@ -58,10 +63,29 @@ public class PermissionsConfig {
     @Override
     public String toString() {
         return "PermissionsConfig{" +
-                "type=" + type +
-                ", uid=" + uid +
-                ", gid=" + gid +
-                ", mask=" + mask +
+                "type=" + getType() +
+                ", uid=" + getUid() +
+                ", gid=" + getGid() +
+                ", mask=" + getMask() +
                 '}';
+    }
+
+    /**
+     * Creates a new PermissionsConfig object that is merged from this permissions and given other permissions.
+     * <p>
+     * Only defined properties from other will be set, while keeping undefined properties of other from this.
+     *
+     * @param other
+     * @return merged permissions config
+     */
+    public PermissionsConfig merge(PermissionsConfig other) {
+        PermissionsConfig merged = new PermissionsConfig();
+
+        merged.type = other.type == null ? type : other.type;
+        merged.uid = other.uid == null ? uid : other.uid;
+        merged.gid = other.gid == null ? gid : other.gid;
+        merged.mask = other.mask == null ? mask : other.mask;
+
+        return merged;
     }
 }

@@ -1,11 +1,13 @@
 package world.gfi.nfs4j.fs.permission;
 
+import com.sun.jna.platform.FileUtils;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
 import world.gfi.nfs4j.config.ShareConfig;
 import world.gfi.nfs4j.fs.handle.PathHandleRegistryListener;
 import world.gfi.nfs4j.utils.FileNameSanitizer;
+import world.gfi.nfs4j.utils.JnaWindowsUtils;
 
 import java.io.Closeable;
 import java.io.File;
@@ -102,7 +104,7 @@ public class PermissionsMapDb<A extends BasicFileAttributes> implements Permissi
      * @see
      */
     protected void checkFileId(Path path, A attrs) {
-        long fileId = attrs.creationTime().toMillis();
+        long fileId = this.idReader.getFileId(path, attrs);
 
         String key = path.normalize().toString();
 

@@ -3,6 +3,7 @@ package world.gfi.nfs4j.config;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 
 /**
  * Configuration of a share.
@@ -13,13 +14,13 @@ public class ShareConfig {
     private boolean appendDefaultAlias;
     private boolean localMetadata;
     private PermissionsConfig permissions;
+    private Map<String, PermissionsConfig> globPermissions;
 
     public ShareConfig() {
     }
 
     public ShareConfig(Path path) {
         this.path = path;
-        this.alias = alias;
     }
 
     public ShareConfig(Path path, String alias) {
@@ -76,12 +77,21 @@ public class ShareConfig {
         this.permissions = permissions;
     }
 
+    public Map<String, PermissionsConfig> getGlobPermissions() {
+        return globPermissions;
+    }
+
+    public void setGlobPermissions(Map<String, PermissionsConfig> globPermissions) {
+        this.globPermissions = globPermissions;
+    }
+
     @Override
     public String toString() {
         return "ShareConfig{" +
                 "path=" + path +
                 ", alias='" + alias + '\'' +
                 ", permissions=" + permissions +
+                ", globPermissions=" + globPermissions +
                 '}';
     }
 

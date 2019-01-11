@@ -18,7 +18,7 @@ public class DefaultPermissionsMapperFactory implements PermissionsMapperFactory
                 }
             case ADVANCED:
                 if (SystemUtils.IS_OS_WINDOWS) {
-                    PermissionsMapDb permissionsMapDb = new PermissionsMapDb<>(share, alias, new WindowsPermissionsSimpleReader(permissions), new WindowsFileIdReader<>());
+                    PermissionsMapDb permissionsMapDb = new PermissionsMapDb<>(share, alias, new WindowsPermissionsSimpleReader(permissions), new DefaultFileIdReader<>()); // WindowsFileIdReader is slower.
                     return new SimplePermissionsMapper(permissionsMapDb, permissionsMapDb);
                 } else {
                     PermissionsMapDb permissionsMapDb = new PermissionsMapDb<>(share, alias, new LinuxPermissionsSimpleReader(permissions), new DefaultFileIdReader<>());

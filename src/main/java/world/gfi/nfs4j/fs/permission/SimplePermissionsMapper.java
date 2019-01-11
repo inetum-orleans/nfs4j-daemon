@@ -44,7 +44,7 @@ public class SimplePermissionsMapper<A extends BasicFileAttributes> extends Simp
     }
 
     @Override
-    public Closeable getClosable() {
+    public Closeable getCloseable() {
         if (this.writer instanceof Closeable) {
             return (Closeable) this.writer;
         }

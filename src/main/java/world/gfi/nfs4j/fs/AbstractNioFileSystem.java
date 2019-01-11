@@ -74,8 +74,8 @@ public abstract class AbstractNioFileSystem<A extends BasicFileAttributes> imple
 
     @Override
     public void close() throws IOException {
-        if (this.permissionsMapper.getClosable() != null) {
-            this.permissionsMapper.getClosable().close();
+        if (this.permissionsMapper.getCloseable() != null) {
+            this.permissionsMapper.getCloseable().close();
         }
     }
 

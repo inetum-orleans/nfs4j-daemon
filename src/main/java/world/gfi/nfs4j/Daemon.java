@@ -39,6 +39,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -131,14 +132,8 @@ public class Daemon implements Closeable {
             alias = alias + share.buildDefaultAlias();
         }
 
-        PermissionsConfig permissions = share.getPermissions() == null ? this.config.getPermissions() : share.getPermissions();
-        PermissionsMapper permissionsMapper = null;
+        PermissionsMapper permissionsMapper = buildPermissionMapper(share, alias);
 
-        try {
-            permissionsMapper = permissionsMapperFactory.newPermissionsMapper(permissions, share, alias);
-        } catch (IOException e) {
-            throw new AttachException("Can't create permissions mapper", e);
-        }
 
         AttachableFileSystem shareVfs = fsFactory.newFileSystem(share.getPath(), permissionsMapper, uniqueHandleGenerator);
         vfs.attachFileSystem(shareVfs, alias);
@@ -146,6 +141,35 @@ public class Daemon implements Closeable {
         share.setAlias(shareVfs.getAlias());
         LOG.info("Share has been attached: " + share);
         return shareVfs;
+    }
+
+    private PermissionsMapper buildPermissionMapper(ShareConfig share, String alias) throws AttachException {
+        PermissionsConfig defaultPermissions = share.getPermissions() == null ? this.config.getPermissions() : share.getPermissions();
+        PermissionsMapper defaultPermissionMapper = null;
+
+        try {
+            defaultPermissionMapper = permissionsMapperFactory.newPermissionsMapper(defaultPermissions, share, alias);
+        } catch (IOException e) {
+            throw new AttachException("Can't create default permissions mapper", e);
+        }
+
+        Map<String, PermissionsConfig> globBasedPermissions = share.getGlobPermissions();
+        if (globBasedPermissions == null) {
+            return defaultPermissionMapper;
+        }
+        Map<String, PermissionsMapper> globPermissionsMapper = new LinkedHashMap<>();
+        for (Map.Entry<String, PermissionsConfig> entry : globBasedPermissions.entrySet()) {
+            PermissionsConfig effectivePermissions = defaultPermissions.merge(entry.getValue());
+
+            try {
+                PermissionsMapper permissionMapper = permissionsMapperFactory.newPermissionsMapper(effectivePermissions, share, alias);
+                globPermissionsMapper.put(entry.getKey(), permissionMapper);
+            } catch (IOException e) {
+                throw new AttachException("Can't create permissions mapper for " + entry.getKey(), e);
+            }
+        }
+
+        return new GlobBasedPermissionsMapper(defaultPermissionMapper, globPermissionsMapper);
     }
 
     public AttachableFileSystem detach(ShareConfig share) throws AttachException {
