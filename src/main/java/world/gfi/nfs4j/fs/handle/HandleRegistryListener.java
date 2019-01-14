@@ -5,5 +5,5 @@ public interface HandleRegistryListener<P> {
 
     void removed(P path, long fileHandle);
 
-    void replaced(P oldPath, P newPath);
+    void replaced(P oldPath, P newPath, long fileHandle);
 }

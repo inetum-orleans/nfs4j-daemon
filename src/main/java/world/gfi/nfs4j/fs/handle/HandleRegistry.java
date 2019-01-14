@@ -130,7 +130,7 @@ public abstract class HandleRegistry<P> {
         }
 
         if (this.listener != null) {
-            this.listener.replaced(oldPath, newPath);
+            this.listener.replaced(oldPath, newPath, fileHandle);
         }
 
         return true;

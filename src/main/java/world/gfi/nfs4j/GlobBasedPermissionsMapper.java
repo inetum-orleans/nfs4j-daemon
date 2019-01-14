@@ -1,7 +1,7 @@
 package world.gfi.nfs4j;
 
 import org.dcache.nfs.vfs.Stat;
-import world.gfi.nfs4j.fs.handle.MultipleHandleRegistryListener;
+import world.gfi.nfs4j.fs.handle.GlobBasedPathHandleRegistryListener;
 import world.gfi.nfs4j.fs.handle.PathHandleRegistryListener;
 import world.gfi.nfs4j.fs.permission.PermissionsMapper;
 
@@ -14,10 +14,8 @@ import java.nio.file.PathMatcher;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class GlobBasedPermissionsMapper implements PermissionsMapper {
     private final PermissionsMapper defaultPermissionsMapper;
@@ -66,26 +64,7 @@ public class GlobBasedPermissionsMapper implements PermissionsMapper {
      */
     @Override
     public PathHandleRegistryListener getHandleRegistryListener() {
-        Set<PathHandleRegistryListener> listeners = new LinkedHashSet<>();
-        if (defaultPermissionsMapper.getHandleRegistryListener() != null) {
-            listeners.add(defaultPermissionsMapper.getHandleRegistryListener());
-        }
-
-        for (PermissionsMapper mapper : globPermissionsMapper.values()) {
-            if (mapper.getHandleRegistryListener() != null) {
-                listeners.add(mapper.getHandleRegistryListener());
-            }
-        }
-
-        if (listeners.isEmpty()) {
-            return null;
-        }
-
-        if (listeners.size() == 1) {
-            return listeners.iterator().next();
-        }
-
-        return new MultipleHandleRegistryListener(listeners);
+        return new GlobBasedPathHandleRegistryListener(defaultPermissionsMapper, globPermissionsMapper);
     }
 
     /**

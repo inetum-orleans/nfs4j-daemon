@@ -1,13 +1,11 @@
 package world.gfi.nfs4j.fs.permission;
 
-import com.sun.jna.platform.FileUtils;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
 import world.gfi.nfs4j.config.ShareConfig;
 import world.gfi.nfs4j.fs.handle.PathHandleRegistryListener;
 import world.gfi.nfs4j.utils.FileNameSanitizer;
-import world.gfi.nfs4j.utils.JnaWindowsUtils;
 
 import java.io.Closeable;
 import java.io.File;
@@ -17,6 +15,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class PermissionsMapDb<A extends BasicFileAttributes> implements PermissionsReader<A>, PermissionsWriter, PathHandleRegistryListener, Closeable {
     private final DB db;
@@ -27,6 +27,8 @@ public class PermissionsMapDb<A extends BasicFileAttributes> implements Permissi
     private final PermissionsReader<A> defaultPermissions;
     private final FileIdReader<A> idReader;
     private final ShareConfig share;
+
+    private final ExecutorService cleanupExecutor = Executors.newSingleThreadExecutor();
 
     public static String getFilename(String alias) {
         if (alias == null) {
@@ -71,7 +73,7 @@ public class PermissionsMapDb<A extends BasicFileAttributes> implements Permissi
                 .fileMmapEnable()
                 .fileMmapEnableIfSupported()
                 .fileMmapPreclearDisable()
-                .cleanerHackEnable()
+                //.cleanerHackEnable() May cause other issues.
                 .make();
 
         this.id = db.hashMap("id", Serializer.STRING, Serializer.LONG).createOrOpen();
@@ -79,7 +81,7 @@ public class PermissionsMapDb<A extends BasicFileAttributes> implements Permissi
         this.uidMap = db.hashMap("uid", Serializer.STRING, Serializer.INTEGER).createOrOpen();
         this.gidMap = db.hashMap("gid", Serializer.STRING, Serializer.INTEGER).createOrOpen();
 
-        this.cleanup();
+        cleanupExecutor.execute(this::cleanup);
     }
 
     public void cleanup() {
@@ -197,7 +199,7 @@ public class PermissionsMapDb<A extends BasicFileAttributes> implements Permissi
     }
 
     @Override
-    public void replaced(Path oldPath, Path newPath) {
+    public void replaced(Path oldPath, Path newPath, long fileHandle) {
         String oldKey = oldPath.normalize().toString();
         String newKey = newPath.normalize().toString();
 
