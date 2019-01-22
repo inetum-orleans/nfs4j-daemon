@@ -313,6 +313,10 @@ public abstract class AbstractNioFileSystem<A extends BasicFileAttributes> imple
     @Override
     public String readlink(Inode inode) throws IOException {
         Path path = handleRegistry.toPath(inode);
+        return this.readlinkFromPath(path);
+    }
+
+    protected String readlinkFromPath(Path path) throws IOException {
         String linkData = Files.readSymbolicLink(path).normalize().toString();
         if (File.separatorChar != '/') {
             linkData = linkData.replace(File.separatorChar, '/');

@@ -33,5 +33,17 @@ public class WindowsNioFileSystem extends AbstractNioFileSystem<DosFileAttribute
     protected void applyFileAttributesToStat(Stat stat, Path path, DosFileAttributes attrs) throws IOException {
         super.applyFileAttributesToStat(stat, path, attrs);
         stat.setNlink(1);
+
+        if (Files.isSymbolicLink(path)) {
+            this.applySymbolicLinkAttributesToStat(stat, path, attrs);
+        }
+    }
+
+    /**
+     * To be consistent with a native filesystem, Symbolic links size should match the content of the link.
+     */
+    protected void applySymbolicLinkAttributesToStat(Stat stat, Path path, DosFileAttributes attrs) throws IOException {
+        String linkData = this.readlinkFromPath(path);
+        stat.setSize(linkData.length());
     }
 }
