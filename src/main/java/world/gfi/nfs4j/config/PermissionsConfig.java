@@ -66,7 +66,7 @@ public class PermissionsConfig {
                 "type=" + getType() +
                 ", uid=" + getUid() +
                 ", gid=" + getGid() +
-                ", mask=" + getMask() +
+                ", mask=" + Integer.toOctalString(getMask()) +
                 '}';
     }
 
