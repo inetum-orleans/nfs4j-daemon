@@ -56,8 +56,12 @@ public class PermissionsConfig {
         return mask;
     }
 
-    public void setMask(Integer mask) {
+    public void setMask(int mask) {
         this.mask = mask;
+    }
+    
+    public void defaultMask() {
+        this.mask = null;
     }
 
     @Override
