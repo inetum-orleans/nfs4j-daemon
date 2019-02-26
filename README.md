@@ -156,3 +156,9 @@ You have some options to workaround this issue.
 
 - Run `nfs4j-daemon` as Administrator.
 - Tweak the Local Group Policy to allow *Create symbolic links* to the user running `nfs4j-daemon`. (See this [StackOverflow post](https://superuser.com/questions/104845/permission-to-make-symbolic-links-in-windows-7#answer-105381))
+
+## Build from sources
+
+```
+mvn clean verify
+```
