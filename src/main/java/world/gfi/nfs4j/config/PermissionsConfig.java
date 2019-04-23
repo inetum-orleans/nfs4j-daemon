@@ -47,7 +47,7 @@ public class PermissionsConfig {
 
     public int getMask() {
         if (mask == null) {
-            return type == PermissionsMapperType.DISABLED ? 0775 : 0664;
+            return getType() == PermissionsMapperType.DISABLED ? 0775 : 0664;
         }
         return mask;
     }
