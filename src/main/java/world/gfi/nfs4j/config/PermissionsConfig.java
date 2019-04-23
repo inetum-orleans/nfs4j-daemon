@@ -11,14 +11,10 @@ public class PermissionsConfig {
 
     public PermissionsMapperType getType() {
         if (type == null) {
-            if (SystemUtils.IS_OS_WINDOWS) {
-                return PermissionsMapperType.ADVANCED;
-            }
             if (SystemUtils.IS_OS_LINUX) {
-                return PermissionsMapperType.LINUX;
+                return PermissionsMapperType.UNIX;
             }
-
-            return PermissionsMapperType.SIMPLE;
+            return PermissionsMapperType.DISABLED;
         }
         return type;
     }
@@ -51,7 +47,7 @@ public class PermissionsConfig {
 
     public int getMask() {
         if (mask == null) {
-            return type == PermissionsMapperType.SIMPLE ? 0775 : 0664;
+            return type == PermissionsMapperType.DISABLED ? 0775 : 0664;
         }
         return mask;
     }

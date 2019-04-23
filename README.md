@@ -48,12 +48,16 @@ java -jar nfs4j-daemon.jar --help
 Usage: <main class> [-h] [--api] [--no-share] [--portmap-disabled] [--udp]
                     [--api-bearer=<apiBearer>] [--api-ip=<apiIp>]
                     [--api-port=<apiPort>] [-c=<config>] [-e=<exports>]
-                    [-g=<gid>] [-m=<mask>] [-p=<port>] [-u=<uid>] [<shares>...]
+                    [-g=<gid>] [-m=<mask>] [-p=<port>] [-t=<permissionType>]
+                    [-u=<uid>] [<shares>...]
       [<shares>...]          Directories to share
   -c, --config=<config>      Path to configuration file
   -u, --uid=<uid>            Default user id to use for exported files
   -g, --gid=<gid>            Default group id to use for exported files
   -m, --mask=<mask>          Default mask to use for exported files
+  -t, --permission-type=<permissionType>
+                             Permission type to use (DISABLED, EMULATED, UNIX)
+                               Default: DISABLED
   -p, --port=<port>          Port to use
       --api                  Enable HTTP API
       --api-port=<apiPort>   Port to use for API
@@ -146,6 +150,12 @@ shares:
   - path: 'D:\another\folder'
     alias: '/folder2'
 ```
+
+- By default, permissions type is set to DISABLED on Windows, and `UNIX` on Linux.
+
+    - `DISABLED` => File permission support is disabled. Best performances, but files will always match default uid, gid and mode (`chown`/`chmod` has no effect).
+    - `EMULATED` => File permission support is emulated using a local database. This may impact performance, files uid, gid and mode are preserved on any server OS.
+    - `UNIX` => File permission support use native Unix attributes on the server. This better performance than `EMULTAED`, files uid, gid and mode are be preserved, but this option is only supported on Unix servers.
 
 ## Symbolic links support on Windows
 

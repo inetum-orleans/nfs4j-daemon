@@ -10,6 +10,7 @@ import world.gfi.nfs4j.config.Config;
 import world.gfi.nfs4j.config.CustomConstructor;
 import world.gfi.nfs4j.config.CustomRepresenter;
 import world.gfi.nfs4j.config.ShareConfig;
+import world.gfi.nfs4j.fs.permission.PermissionsMapperType;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -36,6 +37,10 @@ public class Main implements Callable<Void> {
 
     @Option(names = {"-m", "--mask"}, description = "Default mask to use for exported files")
     private Integer mask;
+    
+    @Option(names = {"-t", "--permission-type"}, 
+            description = "Permission type to use (DISABLED, EMULATED, UNIX)", defaultValue = "DISABLED", showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
+    private PermissionsMapperType permissionType = null;
 
     @Option(names = {"-p", "--port"}, description = "Port to use")
     private Integer port;
@@ -116,6 +121,10 @@ public class Main implements Callable<Void> {
 
         if (this.mask != null) {
             config.getPermissions().setMask(mask);
+        }
+
+        if (this.permissionType != null) {
+            config.getPermissions().setType(permissionType);
         }
 
         if (this.api != null || this.apiPort != null || this.apiIp != null || this.apiBearer != null) {
