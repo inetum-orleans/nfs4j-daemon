@@ -64,10 +64,16 @@ public class FileSystemReaderWriter {
 
     public void commit(Inode inode, long offset, int count) throws IOException {
         Path path = pathHandleRegistry.toPath(inode);
+        FileChannel fileChannel = pathToFileChannel.get(path);
 
-        FileChannel fileChannel = pathToFileChannel.remove(path);
-        if (fileChannel != null) {
+        if (fileChannel == null) {
+            return;
+        }
+
+        long size = fileChannel.size();
+        if ((offset == 0 && count == 0) || (size == offset + count)) {
             fileChannel.close();
+            pathToFileChannel.remove(path);
         }
     }
 }
